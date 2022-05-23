@@ -5,11 +5,7 @@
 
 #include "audio_playback.h"
 
-#define _min(x, y) (x) < (y) ? (x) : (y)
-#define _max(x, y) (x) > (y) ? (x) : (y)
-
-#define MAX_PITCH_DEVIATION 6
-#define MAX_VOLUME_DEVIATION 0.9f
+#define MAX_PITCH_DEVIATION 12
 
 int calculate_step_time(int walk_speed, const AudioFile<float> *audioFiles) {
     const float step_size = 0.762f; // for an average man
@@ -24,8 +20,7 @@ int calculate_step_time(int walk_speed, const AudioFile<float> *audioFiles) {
 }
 
 inline float calculate_volume_lower_bound(float volume_deviation) {
-    volume_deviation = powf(10, -0.05f * volume_deviation);
-    return _min(volume_deviation, MAX_VOLUME_DEVIATION);
+    return powf(10, -0.05f * volume_deviation);
 }
 
 int main(int argc, char** argv)
@@ -46,8 +41,7 @@ int main(int argc, char** argv)
     const int step_num_frames = calculate_step_time(6, audioFiles);
     const float volume_lower_bound = calculate_volume_lower_bound((float)6);
 
-    paData data = { audioFiles, {0, 0, 0, 0}, 0, 0, step_num_frames, 1.0f, 1.0f, 
-                    (float)_min(4, MAX_PITCH_DEVIATION), volume_lower_bound};
+    paData data = paData(audioFiles, step_num_frames, (float)_min(8, MAX_PITCH_DEVIATION), volume_lower_bound);
 
     pa_player audio_player;
     PaError err = audio_player.init_pa(&data);
