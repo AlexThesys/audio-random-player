@@ -7,6 +7,7 @@
 #include "librandom.h"
 
 #define NUM_FILES 4
+#define SAMPLE_RATE (48000)
 
 struct paData
 {
@@ -14,6 +15,7 @@ struct paData
     int frameIndex[NUM_FILES];
     int fileID;
     uint32_t cacheId;
+    int numStepFrames;
 };
 
 class pa_player {

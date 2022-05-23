@@ -6,7 +6,6 @@ if( (err) != paNoError ) {\
     return err;\
 }
 
-#define SAMPLE_RATE (48000)
 #define PA_SAMPLE_TYPE  paFloat32
 #define NUM_CHANNELS 2
 
@@ -20,9 +19,9 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
 
     paData* data = (paData*)userData;
     
-    int frameIndex = data->frameIndex[data->fileID];
+    
     // randomization happens here
-    if (!frameIndex) {
+    if (!data->frameIndex[data->fileID]) {
         uint32_t rnd_id = random_gen.i(NUM_FILES - 1);
         librandom::cache cache(data->cacheId);
         rnd_id = cache.check(rnd_id, NUM_FILES);
@@ -30,11 +29,12 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         data->fileID = (int)rnd_id;
     }
     const int fileID = data->fileID;
+    const int frameIndex = data->frameIndex[data->fileID];
     const AudioFile<float> &audioFile = data->audioFile[fileID];
     const AudioFile<float>::AudioBuffer *r_buf = &audioFile.samples;
     float* wptr = (float*)outputBuffer;
     int i;
-    int framesLeft = audioFile.getNumSamplesPerChannel() - frameIndex;
+    int audioFramesLeft = audioFile.getNumSamplesPerChannel() - frameIndex;
 
     (void)inputBuffer; /* Prevent unused variable warnings. */
     (void)timeInfo;
@@ -43,27 +43,33 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
     const int num_channels = audioFile.getNumChannels();
     int file_offset = frameIndex;
     const int mono_file = 1 - (int)audioFile.isMono();
-    if (framesLeft >= framesPerBuffer) {
-        for (i = 0; i < framesPerBuffer; i++, file_offset++)
-        {
+    if (audioFramesLeft >= (int)framesPerBuffer) {
+        for (i = 0; i < framesPerBuffer; i++, file_offset++) {
             *wptr++ = (*r_buf)[0][file_offset];  /* left */
             if (NUM_CHANNELS == 2) *wptr++ = (*r_buf)[mono_file][file_offset];  /* right */
         }
         data->frameIndex[fileID] += framesPerBuffer;
-    }
-    else {
+    } else if (frameIndex < audioFramesLeft) {
         /* final buffer... */
-        for (i = 0; i < framesLeft; i++, file_offset++)
-        {
+        for (i = 0; i < audioFramesLeft; i++, file_offset++) {
             *wptr++ = (*r_buf)[0][file_offset];  /* left */
             if (NUM_CHANNELS == 2) *wptr++ = (*r_buf)[mono_file][file_offset];  /* right */
         }
-        for (; i < framesPerBuffer; i++)
-        {
+        for (; i < framesPerBuffer; i++) {
             *wptr++ = 0;  /* left */
             if (NUM_CHANNELS == 2) *wptr++ = 0;  /* right */
         }
-        data->frameIndex[fileID] = 0;
+        data->frameIndex[fileID] += framesPerBuffer;
+    } else {
+        if (data->frameIndex[fileID] >= data->numStepFrames) {
+            data->frameIndex[fileID] = 0;
+        } else {
+            for (i = 0; i < framesPerBuffer; i++) {
+                *wptr++ = 0;  /* left */
+                if (NUM_CHANNELS == 2) *wptr++ = 0;  /* right */
+            }
+            data->frameIndex[fileID] += framesPerBuffer;
+        }
     }
     return paContinue;
 }
