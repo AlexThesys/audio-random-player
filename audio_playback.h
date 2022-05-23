@@ -16,6 +16,10 @@ struct paData
     int fileID;
     uint32_t cacheId;
     int numStepFrames;
+    float pitch;
+    float volume;
+    float pitch_deviation;
+    float volume_lower_bound;
 };
 
 class pa_player {

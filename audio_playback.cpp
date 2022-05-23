@@ -11,6 +11,11 @@ if( (err) != paNoError ) {\
 
 static librandom::simple random_gen;
 
+inline float semitones_to_pitch_scale(float semitones_dev) {
+    const float semitones = random_gen.f(-semitones_dev, semitones_dev);
+    return powf(2.0f, semitones / 12.0f);
+}
+
 int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
                             unsigned long framesPerBuffer,
                             const PaStreamCallbackTimeInfo* timeInfo,
@@ -27,7 +32,10 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         rnd_id = cache.check(rnd_id, NUM_FILES);
         data->cacheId = cache.value();
         data->fileID = (int)rnd_id;
+        data->pitch = semitones_to_pitch_scale(data->pitch_deviation);
+        data->volume = random_gen.f(data->volume_lower_bound, 1.0f);
     }
+    const float volume = data->volume;
     const int fileID = data->fileID;
     const int frameIndex = data->frameIndex[data->fileID];
     const AudioFile<float> &audioFile = data->audioFile[fileID];
@@ -45,15 +53,15 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
     const int mono_file = 1 - (int)audioFile.isMono();
     if (audioFramesLeft >= (int)framesPerBuffer) {
         for (i = 0; i < framesPerBuffer; i++, file_offset++) {
-            *wptr++ = (*r_buf)[0][file_offset];  /* left */
-            if (NUM_CHANNELS == 2) *wptr++ = (*r_buf)[mono_file][file_offset];  /* right */
+            *wptr++ = (*r_buf)[0][file_offset] * volume;  /* left */
+            if (NUM_CHANNELS == 2) *wptr++ = (*r_buf)[mono_file][file_offset] * volume;  /* right */
         }
         data->frameIndex[fileID] += framesPerBuffer;
     } else if (frameIndex < audioFramesLeft) {
         /* final buffer... */
         for (i = 0; i < audioFramesLeft; i++, file_offset++) {
-            *wptr++ = (*r_buf)[0][file_offset];  /* left */
-            if (NUM_CHANNELS == 2) *wptr++ = (*r_buf)[mono_file][file_offset];  /* right */
+            *wptr++ = (*r_buf)[0][file_offset] * volume;  /* left */
+            if (NUM_CHANNELS == 2) *wptr++ = (*r_buf)[mono_file][file_offset] * volume;  /* right */
         }
         for (; i < framesPerBuffer; i++) {
             *wptr++ = 0;  /* left */
