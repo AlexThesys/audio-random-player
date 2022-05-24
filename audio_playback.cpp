@@ -10,6 +10,9 @@ if( (err) != paNoError ) {\
 #define PA_SAMPLE_TYPE  paFloat32
 #define NUM_CHANNELS 2
 #define FRAMES_PER_BUFFER 256
+#define MAX_VOLUME 1.0f
+#define MAX_LPF_FREQ 20000.0f
+#define DEFAULT_LPF_Q 0.707f
 
 static librandom::simple random_gen;
 static dsp::filter lp_filter;
@@ -35,9 +38,9 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         data->cacheId = cache.value();
         data->fileID = (int)rnd_id;
         data->pitch = semitones_to_pitch_scale(data->pitch_deviation);
-        data->volume = random_gen.f(data->volume_lower_bound, 1.0f);
-        const float lpf_freq = random_gen.f(20000.0f - data->lpf_freq_range, 20000.0f);
-        const float lpf_q = random_gen.f(0.707f, 0.707f + data->lpf_q_range);
+        data->volume = random_gen.f(data->volume_lower_bound, MAX_VOLUME);
+        const float lpf_freq = random_gen.f(MAX_LPF_FREQ - data->lpf_freq_range, MAX_LPF_FREQ);
+        const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + data->lpf_q_range);
         lp_filter.setup(lpf_freq, lpf_q);
     }
     const float volume = data->volume;
