@@ -6,11 +6,12 @@
 #include "audio_playback.h"
 
 #define MAX_PITCH_DEVIATION 12
+#define MAX_WALK_SPEED 10
 
 int calculate_step_time(int walk_speed, const AudioFile<float> *audioFiles) {
     const float step_size = 0.762f; // for an average man
     const float kph_2_mps_rec = 1.0f / 3.6f;
-    const float w_speed = (float)walk_speed * kph_2_mps_rec;
+    const float w_speed = ((float)_min(walk_speed, MAX_WALK_SPEED)) * kph_2_mps_rec;
     int step_num_frames = ceilf((float)SAMPLE_RATE * step_size / w_speed);
     step_num_frames = ((step_num_frames - 1) | (4 - 1)) + 1;  // make multiple of 4
     for (int i = 0; i < NUM_FILES; i++) {
@@ -38,7 +39,7 @@ int main(int argc, char** argv)
     audioFiles[3].load("audio_data/footsteps_grass_run_04.wav");
     audioFiles[3].setAudioBufferSize(audioFiles[3].getNumChannels(),
                                     ((audioFiles[3].getNumSamplesPerChannel() - 1) | (4 - 1)) + 1);
-    const int step_num_frames = calculate_step_time(6, audioFiles);
+    const int step_num_frames = calculate_step_time(4, audioFiles);
     const float volume_lower_bound = calculate_volume_lower_bound((float)6);
 
     paData data = paData(audioFiles, step_num_frames, (float)_min(8, MAX_PITCH_DEVIATION), volume_lower_bound);

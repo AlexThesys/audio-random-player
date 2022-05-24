@@ -42,7 +42,6 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
     const AudioFile<float> &audioFile = data->audioFile[fileID];
     float* wptr = (float*)outputBuffer;
     int i;
-    int audioFramesLeft = audioFile.getNumSamplesPerChannel() - frameIndex;
 
     (void)inputBuffer; /* Prevent unused variable warnings. */
     (void)timeInfo;
@@ -51,10 +50,13 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
     const int num_channels = audioFile.getNumChannels();
     const int stereo_file = (int)audioFile.isStereo();
     if (frameIndex < audioFile.getNumSamplesPerChannel()) {
+        const int audioFramesLeft = audioFile.getNumSamplesPerChannel() - frameIndex;
         const int out_samples = _min(audioFramesLeft, (int)framesPerBuffer);
-        const int in_samples = roundf(float(out_samples) * data->pitch);
+        const int in_samples = (int)(float(out_samples) * data->pitch);
         std::array<std::vector<float>, 2>& processing_buffer = data->processing_buffer;
-        resample(audioFile.samples, processing_buffer, frameIndex, in_samples, out_samples, (int)framesPerBuffer, volume, audioFile.getNumChannels());
+        resample(audioFile.samples, processing_buffer, frameIndex, in_samples, 
+            out_samples, (int)framesPerBuffer, volume, 
+            audioFile.getNumChannels());
 
         for (i = 0; i < framesPerBuffer; i++) {
             *wptr++ = processing_buffer[0][i];  /* left */
@@ -62,11 +64,11 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         }
         data->frameIndex[fileID] += in_samples;
     } else {
+        for (i = 0; i < framesPerBuffer; i++) {
+            *wptr++ = 0;  /* left */
+            if (NUM_CHANNELS == 2) *wptr++ = 0;  /* right */
+        }
         if (frameIndex < data->numStepFrames) {
-            for (i = 0; i < framesPerBuffer; i++) {
-                *wptr++ = 0;  /* left */
-                if (NUM_CHANNELS == 2) *wptr++ = 0;  /* right */
-            }
             data->frameIndex[fileID] += framesPerBuffer;
         } else {
             data->frameIndex[fileID] = 0;
