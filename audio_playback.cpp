@@ -31,22 +31,24 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
     paData* data = (paData*)userData;
     
     // randomization happens here
-    if (!data->frameIndex[data->fileID]) {
+    if (!data->p_data.frameIndex[data->p_data.fileID]) {
         uint32_t rnd_id = random_gen.i(NUM_FILES - 1);
-        librandom::cache cache(data->cacheId);
+        librandom::cache cache(data->p_data.cacheId);
         rnd_id = cache.check(rnd_id, NUM_FILES);
-        data->cacheId = cache.value();
-        data->fileID = (int)rnd_id;
-        data->pitch = semitones_to_pitch_scale(data->pitch_deviation);
-        data->volume = random_gen.f(data->volume_lower_bound, MAX_VOLUME);
-        const float lpf_freq = random_gen.f(MAX_LPF_FREQ - data->lpf_freq_range, MAX_LPF_FREQ);
-        const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + data->lpf_q_range);
+        data->p_data.cacheId = cache.value();
+        data->p_data.fileID = (int)rnd_id;
+        data->p_data.pitch = semitones_to_pitch_scale(data->p_params->pitch_deviation);
+        data->p_data.volume = random_gen.f(data->p_params->volume_lower_bound, MAX_VOLUME);
+        const float lpf_freq = random_gen.f(MAX_LPF_FREQ - data->p_params->lpf_freq_range, MAX_LPF_FREQ);
+        const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + data->p_params->lpf_q_range);
         lp_filter.setup(lpf_freq, lpf_q);
+        data->p_data.numStepFrames = data->p_params->numStepFrames;
+        data->p_data.waveshaper_enabled = data->p_params->waveshaper_enabled;
     }
-    const float volume = data->volume;
-    const int fileID = data->fileID;
-    const int frameIndex = data->frameIndex[fileID];
-    const AudioFile<float> &audioFile = data->audioFile[fileID];
+    const float volume = data->p_data.volume;
+    const int fileID = data->p_data.fileID;
+    const int frameIndex = data->p_data.frameIndex[fileID];
+    const AudioFile<float> &audioFile = data->p_data.audioFile[fileID];
     float* wptr = (float*)outputBuffer;
     int i;
 
@@ -59,14 +61,14 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
     if (frameIndex < audioFile.getNumSamplesPerChannel()) {
         const int audioFramesLeft = audioFile.getNumSamplesPerChannel() - frameIndex;
         const int out_samples = _min(audioFramesLeft, (int)framesPerBuffer);
-        const int in_samples = (int)(float(out_samples) * data->pitch);
-        std::array<std::vector<float>, 2>& processing_buffer = data->processing_buffer;
+        const int in_samples = (int)(float(out_samples) * data->p_data.pitch);
+        std::array<std::vector<float>, 2>& processing_buffer = data->p_data.processing_buffer;
         
         const int frames_read = resample(audioFile.samples, processing_buffer, frameIndex, in_samples, 
             out_samples, (int)framesPerBuffer, volume, 
             audioFile.getNumChannels());
 
-        if (data->waveshaper_enabled)
+        if (data->p_data.waveshaper_enabled)
             dsp::waveshaper::process(processing_buffer, dsp::waveshaper::default_params);
 
         lp_filter.process(processing_buffer);
@@ -75,16 +77,16 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
             *wptr++ = processing_buffer[0][i];  /* left */
             if (NUM_CHANNELS == 2) *wptr++ = processing_buffer[stereo_file][i];  /* right */
         }
-        data->frameIndex[fileID] += frames_read;
+        data->p_data.frameIndex[fileID] += frames_read;
     } else {
         for (i = 0; i < framesPerBuffer; i++) {
             *wptr++ = 0;  /* left */
             if (NUM_CHANNELS == 2) *wptr++ = 0;  /* right */
         }
-        if (frameIndex < data->numStepFrames) {
-            data->frameIndex[fileID] += framesPerBuffer;
+        if (frameIndex < data->p_data.numStepFrames) {
+            data->p_data.frameIndex[fileID] += framesPerBuffer;
         } else {
-            data->frameIndex[fileID] = 0;
+            data->p_data.frameIndex[fileID] = 0;
         }
     }
     return paContinue;
@@ -121,7 +123,7 @@ int pa_player::init_pa(paData* data) {
                            possibly changing, buffer size.*/
         paClipOff,
         pa_player::playCallback, /* this is your callback function */
-        data); /*This is a pointer that will be passed to
+        (void*)data); /*This is a pointer that will be passed to
                            your callback*/
     verify_pa_no_error_verbose(err);
  
@@ -138,27 +140,3 @@ int pa_player::deinit_pa() {
     err = Pa_Terminate();
     verify_pa_no_error_verbose(err);
 }
-
-////////////////////////////
-
-/*
-PaError     Pa_IsStreamStopped (PaStream *stream)
-PaError     Pa_IsStreamActive (PaStream *stream)
-const PaStreamInfo *    Pa_GetStreamInfo (PaStream *stream)
-PaTime  Pa_GetStreamTime (PaStream *stream)
-PaError Pa_GetSampleSize (PaSampleFormat format)
-void    Pa_Sleep (long msec)
-
-    //int sampleRate = audioFile.getSampleRate();
-    //int bitDepth = audioFile.getBitDepth();
-
-    //int numSamples = audioFile.getNumSamplesPerChannel();
-    //double lengthInSeconds = audioFile.getLengthInSeconds();
-
-    //int numChannels = audioFile.getNumChannels();
-    //bool isMono = audioFile.isMono();
-    //bool isStereo = audioFile.isStereo();
-
-    // or, just use this quick shortcut to print a summary to the console
-    //audioFile.printSummary();
-*/

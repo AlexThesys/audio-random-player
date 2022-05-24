@@ -51,7 +51,7 @@ int clamp_input(T val, T min, T max) {
     return _max(val, min);
 }
 
-void get_user_params(paData* data, const AudioFile<float>* audioFiles) {
+void get_user_params(play_params* data, const AudioFile<float>* audioFiles) {
 	puts("Please provide the playback parameters in decimal integer format!");
 	puts("Enter any letter to skip the parameter and use default.");
     printf("\nEnter the walk speed in kph [1...10]:\t");
@@ -84,5 +84,5 @@ void get_user_params(paData* data, const AudioFile<float>* audioFiles) {
 
     while ((getchar()) != '\n');    // flush stdin
 
-    data->init(audioFiles, step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, enable_dist);
+    data->init(step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, enable_dist);
 }

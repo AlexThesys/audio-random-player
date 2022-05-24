@@ -14,17 +14,28 @@ int main(int argc, char** argv)
     audioFiles[2].load("audio_data/footsteps_grass_run_03.wav");
     audioFiles[3].load("audio_data/footsteps_grass_run_04.wav");
 
-
-    paData data;
-    get_user_params(&data, audioFiles);
+    play_params p_params[2];
+    paData data = paData(audioFiles);
+    int selector = 0;
+    get_user_params(p_params, audioFiles);
+    data.p_params = p_params;
 
     pa_player audio_player;
     PaError err = audio_player.init_pa(&data);
     if (err != paNoError)
         return -1;
 
-    puts("\nPress \'ENTER\' to stop the playback...");
-    const char ch = getchar();
+    do {
+        puts("\nEnter \'q\' to stop the playback or '\p'\ to change parameters...");
+        const char ch = getchar();
+        if (ch == 'q' || ch == 'Q') {
+            break;
+        } else if (ch == 'p' || ch == 'P') {
+            selector ^= 1;
+            get_user_params(&p_params[selector], audioFiles);
+            data.p_params = &p_params[selector];
+        }
+    } while (true);
 
     audio_player.deinit_pa();
     if (err != paNoError)
