@@ -2,6 +2,7 @@
 
 #include "audio_playback.h"
 
+#define NUM_FILES 4
 #define DEFAULT_PITCH_DEVIATION 0
 #define MAX_PITCH_DEVIATION 12
 #define MIN_PITCH_DEVIATION 0
@@ -18,13 +19,13 @@
 #define MIN_LPF_Q_DEVIATION 0
 #define MAX_LPF_Q_DEVIATION 8
 
-int calculate_step_time(int walk_speed, const AudioFile<float>* audioFiles) {
+int calculate_step_time(int walk_speed, const std::vector<AudioFile<float>>& audioFiles) {
     const float step_size = 0.762f; // for an average man
     const float kph_2_mps_rec = 1.0f / 3.6f;
     const float w_speed = ((float)walk_speed) * kph_2_mps_rec;
     int step_num_frames = ceilf((float)SAMPLE_RATE * step_size / w_speed);
     //step_num_frames = ((step_num_frames - 1) | (4 - 1)) + 1;  // make multiple of 4
-    for (int i = 0; i < NUM_FILES; i++) {
+    for (int i = 0, sz = audioFiles.size(); i < sz; i++) {
         step_num_frames = _max(step_num_frames, audioFiles[i].getNumSamplesPerChannel());
     }
     return step_num_frames;
@@ -51,7 +52,7 @@ int clamp_input(T val, T min, T max) {
     return _max(val, min);
 }
 
-void get_user_params(play_params* data, const AudioFile<float>* audioFiles) {
+void get_user_params(play_params* data, const std::vector<AudioFile<float>>& audioFiles) {
 	puts("Please provide the playback parameters in decimal integer format!");
 	puts("Enter any letter to skip the parameter and use default.");
     printf("\nEnter the walk speed in kph [1...10]:\t");

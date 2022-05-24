@@ -6,16 +6,15 @@
 #include "AudioFile.h"
 #include "librandom.h"
 
-#define NUM_FILES 4
 #define SAMPLE_RATE (48000)
 
 #define _min(x, y) (x) < (y) ? (x) : (y)
 #define _max(x, y) (x) > (y) ? (x) : (y)
 
 struct play_data {
-    const AudioFile<float>* audioFile;
+    const std::vector<AudioFile<float>>* audioFile;
     std::array<std::vector<float>, 2> processing_buffer;
-    int frameIndex[NUM_FILES];
+    std::vector<int> frameIndex;
     int fileID;
     uint32_t cacheId;
     float pitch;
@@ -23,7 +22,7 @@ struct play_data {
     int numStepFrames;
     bool waveshaper_enabled;
 
-    void init(const AudioFile<float>* af) {
+    void init(const std::vector<AudioFile<float>> *af) {
         audioFile = af;
         fileID = 0;
         cacheId = 0;
@@ -31,7 +30,7 @@ struct play_data {
         volume = 1.0f;
         numStepFrames = 0;
         waveshaper_enabled = false;
-        memset(frameIndex, 0, sizeof(frameIndex));
+        frameIndex.resize(audioFile->size(), 0);
     }
 };
 
@@ -58,7 +57,7 @@ struct paData
     play_data p_data;
     play_params *p_params;
 
-    paData(const AudioFile<float>* af) : p_params(nullptr) {
+    paData(const std::vector<AudioFile<float>>* af) : p_params(nullptr) {
         p_data.init(af);
     }
 

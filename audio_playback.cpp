@@ -32,9 +32,10 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
     
     // randomization happens here
     if (!data->p_data.frameIndex[data->p_data.fileID]) {
-        uint32_t rnd_id = random_gen.i(NUM_FILES - 1);
+        const int num_files = data->p_data.audioFile->size();
+        uint32_t rnd_id = random_gen.i(num_files - 1);
         librandom::cache cache(data->p_data.cacheId);
-        rnd_id = cache.check(rnd_id, NUM_FILES);
+        rnd_id = cache.check(rnd_id, num_files);
         data->p_data.cacheId = cache.value();
         data->p_data.fileID = (int)rnd_id;
         data->p_data.pitch = semitones_to_pitch_scale(data->p_params->pitch_deviation);
@@ -48,7 +49,7 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
     const float volume = data->p_data.volume;
     const int fileID = data->p_data.fileID;
     const int frameIndex = data->p_data.frameIndex[fileID];
-    const AudioFile<float> &audioFile = data->p_data.audioFile[fileID];
+    const AudioFile<float>& audioFile = (*data->p_data.audioFile)[fileID];
     float* wptr = (float*)outputBuffer;
     int i;
 

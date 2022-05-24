@@ -2,20 +2,51 @@
 //
 
 #include <stdio.h>
+#include <windows.h>
+#include <tchar.h>
 
 #include "input.h"
 
+bool load_files(std::vector<AudioFile<float>> &audioFiles) {
+    const char* folder = "audio_data/";
+    LPCTSTR  search_path = L"audio_data/*.*";
+    char path[MAX_PATH];
+    char filename[MAX_PATH];
+
+    audioFiles.reserve(NUM_FILES);
+
+    WIN32_FIND_DATA fd;
+    HANDLE hFind = ::FindFirstFile(search_path, &fd);
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                memset(path, 0, sizeof(path));
+                memset(filename, 0, sizeof(filename));
+                strcpy_s(path, folder);
+                const size_t path_len = ::WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, NULL, 0, 0, NULL);
+                ::WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, (LPSTR)filename, path_len, 0, NULL);
+                strcat_s(path, filename);
+
+                audioFiles.push_back(AudioFile<float>());
+                audioFiles.back().load(path);
+            }
+        } while (::FindNextFile(hFind, &fd));
+        ::FindClose(hFind);
+        return true;
+    }
+    return false;
+}
 
 int main(int argc, char** argv)
 {
-    AudioFile<float> audioFiles[NUM_FILES];
-    audioFiles[0].load("audio_data/footsteps_grass_run_01.wav");
-    audioFiles[1].load("audio_data/footsteps_grass_run_02.wav");
-    audioFiles[2].load("audio_data/footsteps_grass_run_03.wav");
-    audioFiles[3].load("audio_data/footsteps_grass_run_04.wav");
+    std::vector<AudioFile<float>> audioFiles;
+    if (!load_files(audioFiles)) {
+        puts("Error loading files...exiting.");
+        return -1;
+    }
 
     play_params p_params[2];
-    paData data = paData(audioFiles);
+    paData data = paData(&audioFiles);
     int selector = 0;
     get_user_params(p_params, audioFiles);
     data.p_params = p_params;
