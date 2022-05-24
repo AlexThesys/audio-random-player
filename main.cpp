@@ -7,6 +7,8 @@
 
 #include "input.h"
 
+#define MAX_DATA_SIZE 0x100000
+
 bool load_files(std::vector<AudioFile<float>> &audioFiles) {
     const char* folder = "audio_data/";
     LPCTSTR  search_path = L"audio_data/*.*";
@@ -14,6 +16,8 @@ bool load_files(std::vector<AudioFile<float>> &audioFiles) {
     char filename[MAX_PATH];
 
     audioFiles.reserve(NUM_FILES);
+
+    size_t total_size = 0;
 
     WIN32_FIND_DATA fd;
     HANDLE hFind = ::FindFirstFile(search_path, &fd);
@@ -29,6 +33,11 @@ bool load_files(std::vector<AudioFile<float>> &audioFiles) {
 
                 audioFiles.push_back(AudioFile<float>());
                 audioFiles.back().load(path);
+                total_size += audioFiles.back().getNumSamplesPerChannel() * audioFiles.back().getNumChannels() * sizeof(float);
+                if (total_size > MAX_DATA_SIZE) {
+                    puts("Max data size exceeded, no more files are going to be loaded.");
+                    break;
+                }
             }
         } while (::FindNextFile(hFind, &fd));
         ::FindClose(hFind);
