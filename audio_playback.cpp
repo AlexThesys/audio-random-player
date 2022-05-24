@@ -59,8 +59,9 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
 
     const int num_channels = audioFile.getNumChannels();
     const int stereo_file = (int)audioFile.isStereo();
-    if (frameIndex < audioFile.getNumSamplesPerChannel()) {
-        const int audioFramesLeft = audioFile.getNumSamplesPerChannel() - frameIndex;
+    const int total_samples = _min(audioFile.getNumSamplesPerChannel(), data->p_data.numStepFrames);
+    if (frameIndex < total_samples) {
+        const int audioFramesLeft = total_samples - frameIndex;
         const int out_samples = _min(audioFramesLeft, (int)framesPerBuffer);
         const int in_samples = (int)(float(out_samples) * data->p_data.pitch);
         std::array<std::vector<float>, 2>& processing_buffer = data->p_data.processing_buffer;

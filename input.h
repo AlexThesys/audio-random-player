@@ -10,7 +10,7 @@
 #define MIN_VOLUME_LOWER_BOUND 0
 #define MAX_VOLUME_LOWER_BOUND 90
 #define DEFAULT_WALK_SPEED 4
-#define MAX_WALK_SPEED 10
+#define MAX_WALK_SPEED 12
 #define MIN_WALK_SPEED 1
 #define DEFAULT_LPF_FREQ_DEVIATION 0
 #define MIN_LPF_FREQ_DEVIATION 0
@@ -24,10 +24,10 @@ int calculate_step_time(int walk_speed, const std::vector<AudioFile<float>>& aud
     const float kph_2_mps_rec = 1.0f / 3.6f;
     const float w_speed = ((float)walk_speed) * kph_2_mps_rec;
     int step_num_frames = ceilf((float)SAMPLE_RATE * step_size / w_speed);
-    //step_num_frames = ((step_num_frames - 1) | (4 - 1)) + 1;  // make multiple of 4
-    for (int i = 0, sz = audioFiles.size(); i < sz; i++) {
-        step_num_frames = _max(step_num_frames, audioFiles[i].getNumSamplesPerChannel());
-    }
+    // always play full length of all the files - don't fade out them
+    //for (int i = 0, sz = audioFiles.size(); i < sz; i++) {
+    //    step_num_frames = _max(step_num_frames, audioFiles[i].getNumSamplesPerChannel());
+    //}
     return step_num_frames;
 }
 
@@ -55,7 +55,7 @@ int clamp_input(T val, T min, T max) {
 void get_user_params(play_params* data, const std::vector<AudioFile<float>>& audioFiles) {
 	puts("Please provide the playback parameters in decimal integer format!");
 	puts("Enter any letter to skip the parameter and use default.");
-    printf("\nEnter the walk speed in kph [1...10]:\t");
+    printf("\nEnter the walk speed in kph [1...12]:\t");
     const int walk_speed = clamp_input(get_input(DEFAULT_WALK_SPEED), MIN_WALK_SPEED, MAX_WALK_SPEED);
     printf("%d\n", walk_speed);
     const int step_num_frames = calculate_step_time(walk_speed, audioFiles);

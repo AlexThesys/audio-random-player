@@ -8,6 +8,8 @@
 static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std::vector<float>, 2> &dest,
 					int file_offset, int in_samples, int out_samples, int frames_per_buffer, float volume, int num_ch) {
 
+	constexpr int fade_prefered_lenght = 40;
+
 	int i;
 	int frames_read = in_samples;
 	if (in_samples == out_samples) {
@@ -18,8 +20,17 @@ static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std:
 				dest[ch][i] = source[ch][j] * volume;
 			}
 			// if it's the last one - pad with zeros
-			for (; i < frames_per_buffer; i++) {
-				dest[ch][i] = 0.0f;
+			if (out_samples < frames_per_buffer) {
+				const int fade_out = (out_samples < fade_prefered_lenght) ? out_samples : fade_prefered_lenght;
+				const float decrement = 1.0f / (float)fade_out;
+				float factor = 1.0f;
+				for (i = out_samples - fade_out; i < out_samples; i++) {
+					dest[ch][i] *= factor;
+					factor -= decrement;
+				}
+				for (; i < frames_per_buffer; i++) {
+					dest[ch][i] = 0.0f;
+				}
 			}
 		}
 	} else {
@@ -39,21 +50,20 @@ static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std:
 				dest[ch][i] = res * volume;
 			}
 			//if it's the last one - pad with zeros
-			//if (out_samples < frames_per_buffer) {
-			//	constexpr int prefered_lenght = 40;
-			//	const int lerp_lenght = (out_samples < prefered_lenght) ? out_samples : prefered_lenght;
-			//	const float decrement = 1.0f / (float)lerp_lenght;
-			//	float factor = 1.0f;
-			//	for (i = out_samples - lerp_lenght; i < out_samples; i++) {
-			//		dest[ch][i] *= factor;
-			//		factor -= decrement;
-			//	}
+			if (out_samples < frames_per_buffer) {
+				const int fade_out = (out_samples < fade_prefered_lenght) ? out_samples : fade_prefered_lenght;
+				const float decrement = 1.0f / (float)fade_out;
+				float factor = 1.0f;
+				for (i = out_samples - fade_out; i < out_samples; i++) {
+					dest[ch][i] *= factor;
+					factor -= decrement;
+				}
 				for (; i < frames_per_buffer; i++) {
 					dest[ch][i] = 0.0f;
 				}
 				if ((out_samples < frames_per_buffer) && (d < 1.0f))
 					frames_read = out_samples;
-			//}
+			}
 		}
 	}
 	return frames_read;
