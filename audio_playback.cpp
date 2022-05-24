@@ -70,7 +70,7 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         std::array<std::vector<float>, 2>& processing_buffer = data->p_data.processing_buffer;
         
         const int frames_read = resample(audioFile.samples, processing_buffer, frameIndex, in_samples, 
-            out_samples, (int)framesPerBuffer, audioFile.getNumChannels());
+            out_samples, (int)framesPerBuffer, audioFile.getNumChannels(), (total_samples < audioFile.getNumSamplesPerChannel()));
 
         apply_volume(processing_buffer, volume, data->p_data.use_lfo, lfo_gen);
 

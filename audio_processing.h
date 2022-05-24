@@ -7,7 +7,7 @@
 #define LFO_BUFFER_SIZE 1024
 
 static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std::vector<float>, 2> &dest,
-					int file_offset, int in_samples, int out_samples, int frames_per_buffer, int num_ch) {
+					int file_offset, int in_samples, int out_samples, int frames_per_buffer, int num_ch, bool fadeout) {
 
 	constexpr int fade_prefered_lenght = 40;
 
@@ -22,12 +22,14 @@ static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std:
 			}
 			// if it's the last one - pad with zeros
 			if (out_samples < frames_per_buffer) {
-				const int fade_out = (out_samples < fade_prefered_lenght) ? out_samples : fade_prefered_lenght;
-				const float decrement = 1.0f / (float)fade_out;
-				float factor = 1.0f;
-				for (i = out_samples - fade_out; i < out_samples; i++) {
-					dest[ch][i] *= factor;
-					factor -= decrement;
+				if (fadeout) {
+					const int fade_out = (out_samples < fade_prefered_lenght) ? out_samples : fade_prefered_lenght;
+					const float decrement = 1.0f / (float)fade_out;
+					float factor = 1.0f;
+					for (i = out_samples - fade_out; i < out_samples; i++) {
+						dest[ch][i] *= factor;
+						factor -= decrement;
+					}
 				}
 				for (; i < frames_per_buffer; i++) {
 					dest[ch][i] = 0.0f;
@@ -52,12 +54,14 @@ static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std:
 			}
 			//if it's the last one - pad with zeros
 			if (out_samples < frames_per_buffer) {
-				const int fade_out = (out_samples < fade_prefered_lenght) ? out_samples : fade_prefered_lenght;
-				const float decrement = 1.0f / (float)fade_out;
-				float factor = 1.0f;
-				for (i = out_samples - fade_out; i < out_samples; i++) {
-					dest[ch][i] *= factor;
-					factor -= decrement;
+				if (fadeout) {
+					const int fade_out = (out_samples < fade_prefered_lenght) ? out_samples : fade_prefered_lenght;
+					const float decrement = 1.0f / (float)fade_out;
+					float factor = 1.0f;
+					for (i = out_samples - fade_out; i < out_samples; i++) {
+						dest[ch][i] *= factor;
+						factor -= decrement;
+					}
 				}
 				for (; i < frames_per_buffer; i++) {
 					dest[ch][i] = 0.0f;
