@@ -54,9 +54,13 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         const int out_samples = _min(audioFramesLeft, (int)framesPerBuffer);
         const int in_samples = (int)(float(out_samples) * data->pitch);
         std::array<std::vector<float>, 2>& processing_buffer = data->processing_buffer;
+        
         const int frames_read = resample(audioFile.samples, processing_buffer, frameIndex, in_samples, 
             out_samples, (int)framesPerBuffer, volume, 
             audioFile.getNumChannels());
+
+        if (data->waveshaper_enabled)
+            dsp::waveshaper::process(processing_buffer, dsp::waveshaper::default_params);
 
         for (i = 0; i < framesPerBuffer; i++) {
             *wptr++ = processing_buffer[0][i];  /* left */

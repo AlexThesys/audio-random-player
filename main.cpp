@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     const int step_num_frames = calculate_step_time(4, audioFiles);
     const float volume_lower_bound = calculate_volume_lower_bound((float)6);
 
-    paData data = paData(audioFiles, step_num_frames, (float)_min(8, MAX_PITCH_DEVIATION), volume_lower_bound);
+    paData data = paData(audioFiles, step_num_frames, (float)_min(8, MAX_PITCH_DEVIATION), volume_lower_bound, false);
 
     pa_player audio_player;
     PaError err = audio_player.init_pa(&data);

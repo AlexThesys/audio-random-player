@@ -24,9 +24,10 @@ struct paData
     float volume;
     float pitch_deviation;
     float volume_lower_bound;
+    bool waveshaper_enabled;
 
-    paData(AudioFile<float>* af, int nsf, float pd, float vlb) : audioFile(af), fileID(0), cacheId(0), numStepFrames(nsf), 
-            pitch(1.0f), volume(1.0f), pitch_deviation(pd), volume_lower_bound(vlb) {
+    paData(AudioFile<float>* af, int nsf, float pd, float vlb, bool we) : audioFile(af), fileID(0), cacheId(0), numStepFrames(nsf), 
+            pitch(1.0f), volume(1.0f), pitch_deviation(pd), volume_lower_bound(vlb), waveshaper_enabled(we) {
 
         memset(frameIndex, 0, sizeof(frameIndex));
     }
