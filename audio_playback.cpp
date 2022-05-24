@@ -12,6 +12,7 @@ if( (err) != paNoError ) {\
 #define FRAMES_PER_BUFFER 256
 
 static librandom::simple random_gen;
+static dsp::filter lp_filter;
 
 inline float semitones_to_pitch_scale(float semitones_dev) {
     const float semitones = random_gen.f(-semitones_dev, semitones_dev);
@@ -35,6 +36,7 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         data->fileID = (int)rnd_id;
         data->pitch = semitones_to_pitch_scale(data->pitch_deviation);
         data->volume = random_gen.f(data->volume_lower_bound, 1.0f);
+
     }
     const float volume = data->volume;
     const int fileID = data->fileID;
