@@ -79,6 +79,8 @@ int main(int argc, char** argv)
             selector ^= 1;
             get_user_params(&p_params[selector], audioFiles, disable_fadeout);
             data.p_params = &p_params[selector];
+        } else {
+            while ((getchar()) != '\n');    // flush stdin
         }
     } while (true);
 
