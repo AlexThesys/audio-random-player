@@ -74,8 +74,15 @@ void get_user_params(paData* data, const AudioFile<float>* audioFiles) {
     const int lpf_q_i = clamp_input(get_input(DEFAULT_LPF_Q_DEVIATION), MIN_LPF_Q_DEVIATION, MAX_LPF_Q_DEVIATION);
     printf("%d\n", lpf_q_i);
     const float lpf_q = (float)lpf_q_i;
-    puts("Thank you, enjoy the playback now...");
+
     while ((getchar()) != '\n');    // flush stdin
 
-    data->init(audioFiles, step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, false);
+    printf("\nEnable distortion? [y/n]\t");
+    char ch = getchar();
+    const bool enable_dist = (ch == 'y' || ch == 'Y');
+    printf("%c\n", enable_dist ? 'y' : 'n');
+
+    while ((getchar()) != '\n');    // flush stdin
+
+    data->init(audioFiles, step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, enable_dist);
 }
