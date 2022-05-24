@@ -7,6 +7,7 @@
 #include "librandom.h"
 
 #define SAMPLE_RATE (48000)
+#define NUM_CHANNELS 2
 
 #define _min(x, y) (x) < (y) ? (x) : (y)
 #define _max(x, y) (x) > (y) ? (x) : (y)
@@ -20,6 +21,7 @@ struct play_data {
     float pitch;
     float volume;
     int numStepFrames;
+    bool use_lfo;
     bool waveshaper_enabled;
 
     void init(const std::vector<AudioFile<float>> *af) {
@@ -30,6 +32,7 @@ struct play_data {
         volume = 1.0f;
         numStepFrames = 0;
         waveshaper_enabled = false;
+        use_lfo = false;
         frameIndex.resize(audioFile->size(), 0);
     }
 };
@@ -40,14 +43,20 @@ struct play_params {
     float volume_lower_bound;
     float lpf_freq_range;
     float lpf_q_range;
+    float lfo_freq;
+    float lfo_amount;
+    bool use_lfo;
     bool waveshaper_enabled;
 
-    void init(int nsf, float pd, float vlb, float lfr, float lqr, bool we) {
+    void init(int nsf, float pd, float vlb, float lfr, float lqr, float lf, float la, bool ul, bool we) {
         numStepFrames = nsf;
         pitch_deviation = pd;
         volume_lower_bound = vlb;
         lpf_freq_range = lfr;
         lpf_q_range = lqr;
+        lfo_freq = lf;
+        lfo_amount = la;
+        use_lfo = ul;
         waveshaper_enabled = we;
     }
 };

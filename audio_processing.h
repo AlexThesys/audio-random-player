@@ -4,9 +4,10 @@
 
 #define kPi 3.14159265359 
 #define PI_DIV_4 0.78539816339f
+#define LFO_BUFFER_SIZE 1024
 
 static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std::vector<float>, 2> &dest,
-					int file_offset, int in_samples, int out_samples, int frames_per_buffer, float volume, int num_ch) {
+					int file_offset, int in_samples, int out_samples, int frames_per_buffer, int num_ch) {
 
 	constexpr int fade_prefered_lenght = 40;
 
@@ -17,7 +18,7 @@ static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std:
 		for (int ch = 0; ch < num_ch; ch++) {
 			i = 0;
 			for (int j = file_offset; i < in_samples; i++, j++) {
-				dest[ch][i] = source[ch][j] * volume;
+				dest[ch][i] = source[ch][j];
 			}
 			// if it's the last one - pad with zeros
 			if (out_samples < frames_per_buffer) {
@@ -36,7 +37,7 @@ static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std:
 	} else {
 		const float d = float(in_samples) / float(out_samples);
 		for (int ch = 0; ch < num_ch; ch++) {
-			dest[ch][0] = source[ch][file_offset] * volume;
+			dest[ch][0] = source[ch][file_offset];
 			i = 1;
 			for (int j = file_offset + 1, sz = source[ch].size(); i < out_samples; i++) {
 				const float x = float(i) * d;
@@ -47,7 +48,7 @@ static int resample(const AudioFile<float>::AudioBuffer &source, std::array<std:
 				if ((idx + 1) >= sz)
 					break;
 				const float res = source[ch][idx] * (1.0f - z) + source[ch][idx + 1] * z;
-				dest[ch][i] = res * volume;
+				dest[ch][i] = res;
 			}
 			//if it's the last one - pad with zeros
 			if (out_samples < frames_per_buffer) {
@@ -237,11 +238,59 @@ public:
 		_lpf.setup(f / (float)SAMPLE_RATE, r);
 	}
 	void process(std::array<std::vector<float>, 2>& buffer) {
-		for (uint32_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
+		for (int ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
 			float* dest = buffer[ch].data();
 			_lpf.process(buffer[ch].size(), dest, ch);
 		}
 	}
 
 };
+
+class wavetable {
+	float _buffer[LFO_BUFFER_SIZE];
+	float _read_idx[NUM_CHANNELS];
+	float _inc;
+	float _amount;
+
+public:
+	wavetable() : _inc(0.0f), _amount(0.0f) {
+		for (int i = 0; i < LFO_BUFFER_SIZE; i++) {
+			_buffer[i] = (1.0f - sinf(((float)i / (float)LFO_BUFFER_SIZE) * 2.0f * kPi)) * 0.5f;
+		}
+		memset(_read_idx, 0, sizeof(_read_idx));
+	}
+	void set_rate(float freq, float amount) {
+		memset(_read_idx, 0, sizeof(_read_idx));
+		_inc = (float)LFO_BUFFER_SIZE * freq / SAMPLE_RATE;
+		_amount = amount;
+	}
+	float update(int ch) {
+		int r_idx = (int)_read_idx[ch];
+		float frac = _read_idx[ch] - (float)r_idx;
+		const int r_idx_next = (r_idx + 1) & (LFO_BUFFER_SIZE - 1);
+		const float res = _buffer[r_idx] * (1.0f - frac) + _buffer[r_idx_next] * frac;
+		_read_idx[ch] += _inc;
+		r_idx = (int)_read_idx[ch];
+		frac = _read_idx[ch] - (float)r_idx;
+		r_idx &= (LFO_BUFFER_SIZE - 1);
+		_read_idx[ch] = (float)r_idx + frac;
+		return  1.0f - (res * _amount);
+	}
+};
+}
+
+void apply_volume(std::array<std::vector<float>, 2>& buffer, float volume, bool use_lfo, dsp::wavetable &lfo_gen) {
+	if (!use_lfo) {
+		for (int ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
+			for (int i = 0, sz = buffer[ch].size(); i < sz; i++) {
+				buffer[ch][i] *= volume;
+			}
+		}
+	} else {
+		for (int ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
+			for (int i = 0, sz = buffer[ch].size(); i < sz; i++) {
+				buffer[ch][i] *= lfo_gen.update(ch);
+			}
+		}
+	}
 }

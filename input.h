@@ -18,6 +18,12 @@
 #define DEFAULT_LPF_Q_DEVIATION 0
 #define MIN_LPF_Q_DEVIATION 0
 #define MAX_LPF_Q_DEVIATION 8
+#define DEFAULT_LFO_FREQ 0
+#define MIN_LFO_FREQ 1
+#define MAX_LFO_FREQ 20
+#define DEFAULT_LFO_AMOUNT 50
+#define MIN_LFO_AMOUNT 0
+#define MAX_LFO_AMOUNT 100
 
 int calculate_step_time(int walk_speed, const std::vector<AudioFile<float>>& audioFiles) {
     const float step_size = 0.762f; // for an average man
@@ -66,7 +72,7 @@ void get_user_params(play_params* data, const std::vector<AudioFile<float>>& aud
     printf("\nEnter the volume deviation in dB [0...90]:\t");
     const int volume_lb = clamp_input(get_input(DEFAULT_VOLUME_LOWER_BOUND), MIN_VOLUME_LOWER_BOUND, MAX_VOLUME_LOWER_BOUND);
     printf("%d\n", volume_lb);
-    const float volume_lower_bound = calculate_volume_lower_bound((float)volume_lb);
+    const float volume_lower_bound = calculate_volume_lower_bound((float)volume_lb);   
     printf("\nEnter the LPF frequency deviation in KHZ [0...19]:\t");
     const int lpf_f = clamp_input(get_input(DEFAULT_LPF_FREQ_DEVIATION), MIN_LPF_FREQ_DEVIATION, MAX_LPF_FREQ_DEVIATION);
     printf("%d\n", lpf_f);
@@ -75,6 +81,22 @@ void get_user_params(play_params* data, const std::vector<AudioFile<float>>& aud
     const int lpf_q_i = clamp_input(get_input(DEFAULT_LPF_Q_DEVIATION), MIN_LPF_Q_DEVIATION, MAX_LPF_Q_DEVIATION);
     printf("%d\n", lpf_q_i);
     const float lpf_q = (float)lpf_q_i;
+
+    puts("\nEnter non-zero value to use LFO for volume modulation.");
+    printf("Enter LFO modulation frequency in Hz [1...10]:\t");
+    int lfo_f = get_input(DEFAULT_LFO_FREQ);
+    bool use_lfo = !!lfo_f;
+    float lfo_freq = 0.0f;
+    float lfo_amount = 0.0f;  
+    if (use_lfo) {
+        lfo_f = clamp_input(lfo_f, MIN_LFO_FREQ, MAX_LFO_FREQ);
+        printf("%d\n", lfo_f);
+        lfo_freq = float(lfo_f);
+        printf("\nEnter LFO modulation amount [0...100]:\t");
+        const int lfo_a = clamp_input(get_input(DEFAULT_LFO_AMOUNT), MIN_LFO_AMOUNT, MAX_LFO_AMOUNT);
+        printf("%d\n", lfo_a);
+        lfo_amount = (float)lfo_a / (float)MAX_LFO_AMOUNT;
+    }
 
     while ((getchar()) != '\n');    // flush stdin
 
@@ -85,5 +107,5 @@ void get_user_params(play_params* data, const std::vector<AudioFile<float>>& aud
 
     while ((getchar()) != '\n');    // flush stdin
 
-    data->init(step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, enable_dist);
+    data->init(step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, lfo_freq, lfo_amount, use_lfo, enable_dist);
 }

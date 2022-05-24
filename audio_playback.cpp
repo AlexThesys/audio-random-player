@@ -8,7 +8,6 @@ if( (err) != paNoError ) {\
 }
 
 #define PA_SAMPLE_TYPE  paFloat32
-#define NUM_CHANNELS 2
 #define FRAMES_PER_BUFFER 256
 #define MAX_VOLUME 1.0f
 #define MAX_LPF_FREQ 20000.0f
@@ -16,6 +15,7 @@ if( (err) != paNoError ) {\
 
 static librandom::simple random_gen;
 static dsp::filter lp_filter;
+static dsp::wavetable lfo_gen;
 
 inline float semitones_to_pitch_scale(float semitones_dev) {
     const float semitones = random_gen.f(-semitones_dev, semitones_dev);
@@ -44,6 +44,9 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + data->p_params->lpf_q_range);
         lp_filter.setup(lpf_freq, lpf_q);
         data->p_data.numStepFrames = data->p_params->numStepFrames;
+        data->p_data.use_lfo = data->p_params->use_lfo;
+        if (data->p_data.use_lfo)
+            lfo_gen.set_rate(data->p_params->lfo_freq, data->p_params->lfo_amount);
         data->p_data.waveshaper_enabled = data->p_params->waveshaper_enabled;
     }
     const float volume = data->p_data.volume;
@@ -67,8 +70,9 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         std::array<std::vector<float>, 2>& processing_buffer = data->p_data.processing_buffer;
         
         const int frames_read = resample(audioFile.samples, processing_buffer, frameIndex, in_samples, 
-            out_samples, (int)framesPerBuffer, volume, 
-            audioFile.getNumChannels());
+            out_samples, (int)framesPerBuffer, audioFile.getNumChannels());
+
+        apply_volume(processing_buffer, volume, data->p_data.use_lfo, lfo_gen);
 
         if (data->p_data.waveshaper_enabled)
             dsp::waveshaper::process(processing_buffer, dsp::waveshaper::default_params);
