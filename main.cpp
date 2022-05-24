@@ -48,6 +48,11 @@ bool load_files(std::vector<AudioFile<float>> &audioFiles) {
 
 int main(int argc, char** argv)
 {
+    bool disable_fadeout = false;
+    if (argc > 1) {
+        disable_fadeout = !strcmp(argv[1], "--no-fadeout");
+    }
+
     std::vector<AudioFile<float>> audioFiles;
     if (!load_files(audioFiles)) {
         puts("Error loading files...exiting.");
@@ -57,7 +62,7 @@ int main(int argc, char** argv)
     play_params p_params[2];
     paData data = paData(&audioFiles);
     int selector = 0;
-    get_user_params(p_params, audioFiles);
+    get_user_params(p_params, audioFiles, disable_fadeout);
     data.p_params = p_params;
 
     pa_player audio_player;
@@ -72,7 +77,7 @@ int main(int argc, char** argv)
             break;
         } else if (ch == 'p' || ch == 'P') {
             selector ^= 1;
-            get_user_params(&p_params[selector], audioFiles);
+            get_user_params(&p_params[selector], audioFiles, disable_fadeout);
             data.p_params = &p_params[selector];
         }
     } while (true);

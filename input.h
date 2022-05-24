@@ -25,15 +25,16 @@
 #define MIN_LFO_AMOUNT 0
 #define MAX_LFO_AMOUNT 100
 
-int calculate_step_time(int walk_speed, const std::vector<AudioFile<float>>& audioFiles) {
+int calculate_step_time(int walk_speed, const std::vector<AudioFile<float>>& audioFiles, bool no_fadeout) {
     const float step_size = 0.762f; // for an average man
     const float kph_2_mps_rec = 1.0f / 3.6f;
     const float w_speed = ((float)walk_speed) * kph_2_mps_rec;
     int step_num_frames = ceilf((float)SAMPLE_RATE * step_size / w_speed);
-    // always play full length of all the files - don't fade out them
-    //for (int i = 0, sz = audioFiles.size(); i < sz; i++) {
-    //    step_num_frames = _max(step_num_frames, audioFiles[i].getNumSamplesPerChannel());
-    //}
+    if (no_fadeout) {   // always play full length of all the files - don't fade out them
+        for (int i = 0, sz = audioFiles.size(); i < sz; i++) {
+            step_num_frames = _max(step_num_frames, audioFiles[i].getNumSamplesPerChannel());
+        }
+    }
     return step_num_frames;
 }
 
@@ -58,13 +59,13 @@ int clamp_input(T val, T min, T max) {
     return _max(val, min);
 }
 
-void get_user_params(play_params* data, const std::vector<AudioFile<float>>& audioFiles) {
+void get_user_params(play_params* data, const std::vector<AudioFile<float>>& audioFiles, bool no_fadeout) {
 	puts("Please provide the playback parameters in decimal integer format!");
 	puts("Enter any letter to skip the parameter and use default.");
     printf("\nEnter the walk speed in kph [1...12]:\t");
     const int walk_speed = clamp_input(get_input(DEFAULT_WALK_SPEED), MIN_WALK_SPEED, MAX_WALK_SPEED);
     printf("%d\n", walk_speed);
-    const int step_num_frames = calculate_step_time(walk_speed, audioFiles);
+    const int step_num_frames = calculate_step_time(walk_speed, audioFiles, no_fadeout);
     printf("\nEnter the pitch deviation in semitones [0...12]:\t");
     const int pitch_dev = clamp_input(get_input(DEFAULT_PITCH_DEVIATION), MIN_PITCH_DEVIATION, MAX_PITCH_DEVIATION);
     printf("%d\n", pitch_dev);
