@@ -7,6 +7,8 @@
 
 #define MAX_PITCH_DEVIATION 12
 #define MAX_WALK_SPEED 10
+#define MAX_LPF_FREQ_DEVIATION 19000.0f
+#define MAX_LPF_Q_DEVIATION 8.0f
 
 int calculate_step_time(int walk_speed, const AudioFile<float> *audioFiles) {
     const float step_size = 0.762f; // for an average man
@@ -22,6 +24,13 @@ int calculate_step_time(int walk_speed, const AudioFile<float> *audioFiles) {
 
 inline float calculate_volume_lower_bound(float volume_deviation) {
     return powf(10, -0.05f * volume_deviation);
+}
+
+inline void clamp_lpf_params(float& f, float& q) {
+    f = _max(0.0f, f);
+    f = _min(f, MAX_LPF_FREQ_DEVIATION);
+    q = _max(0.0f, q);
+    q = _min(q, MAX_LPF_Q_DEVIATION);
 }
 
 int main(int argc, char** argv)
@@ -42,7 +51,11 @@ int main(int argc, char** argv)
     const int step_num_frames = calculate_step_time(4, audioFiles);
     const float volume_lower_bound = calculate_volume_lower_bound((float)6);
 
-    paData data = paData(audioFiles, step_num_frames, (float)_min(8, MAX_PITCH_DEVIATION), volume_lower_bound, false);
+    float freq = 18000.0f;
+    float q = 4.0f;
+    clamp_lpf_params(freq, q);
+
+    paData data = paData(audioFiles, step_num_frames, (float)_min(8, MAX_PITCH_DEVIATION), volume_lower_bound, freq, q, false);
 
     pa_player audio_player;
     PaError err = audio_player.init_pa(&data);

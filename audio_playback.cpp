@@ -36,7 +36,9 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         data->fileID = (int)rnd_id;
         data->pitch = semitones_to_pitch_scale(data->pitch_deviation);
         data->volume = random_gen.f(data->volume_lower_bound, 1.0f);
-
+        const float lpf_freq = random_gen.f(20000.0f - data->lpf_freq_range, 20000.0f);
+        const float lpf_q = random_gen.f(0.707f, 0.707f + data->lpf_q_range);
+        lp_filter.setup(lpf_freq, lpf_q);
     }
     const float volume = data->volume;
     const int fileID = data->fileID;
@@ -63,6 +65,8 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
 
         if (data->waveshaper_enabled)
             dsp::waveshaper::process(processing_buffer, dsp::waveshaper::default_params);
+
+        lp_filter.process(processing_buffer);
 
         for (i = 0; i < framesPerBuffer; i++) {
             *wptr++ = processing_buffer[0][i];  /* left */
