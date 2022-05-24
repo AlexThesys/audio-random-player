@@ -64,7 +64,7 @@ struct play_params {
 struct paData
 {
     play_data p_data;
-    play_params *p_params;
+    play_params * volatile p_params;
 
     paData(const std::vector<AudioFile<float>>* af) : p_params(nullptr) {
         p_data.init(af);
