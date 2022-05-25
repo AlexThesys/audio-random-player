@@ -46,8 +46,8 @@ inline void process_audio(float *out_buffer, paData *data, unsigned long frames_
     const int total_samples = _min(audio_file.getNumSamplesPerChannel(), data->p_data.num_step_frames);
     int i;
     if (frame_index < total_samples) {
-        const int audioFramesLeft = total_samples - frame_index;
-        const int out_samples = _min(audioFramesLeft, (int)frames_per_buffer);
+        const int audio_frames_left = total_samples - frame_index;
+        const int out_samples = _min(audio_frames_left, (int)frames_per_buffer);
         const int in_samples = (int)(float(out_samples) * data->p_data.pitch);
         buffer_container &processing_buffer = data->p_data.processing_buffer;
 
