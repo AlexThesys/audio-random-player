@@ -1,13 +1,13 @@
 // audio_test.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-#include <stdio.h>
 #include "user_input.h"
+#include <stdio.h>
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     bool disable_fadeout = false;
-    const char* path = "audio_data";
+    const char *path = "audio_data";
     process_cmdline_args(argc, argv, &path, &disable_fadeout);
 
     audio_file_container audioFiles;

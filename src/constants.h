@@ -6,7 +6,7 @@
 #define FRAMES_PER_BUFFER 256
 #define MAX_VOLUME 1.0f
 
-#define kPi 3.14159265359 
+#define kPi 3.14159265359
 #define PI_DIV_4 0.78539816339f
 
 #define MAX_DATA_SIZE 0x100000

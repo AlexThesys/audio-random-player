@@ -12,8 +12,8 @@ if( (err) != paNoError ) {\
 #define _min(x, y) (x) < (y) ? (x) : (y)
 #define _max(x, y) (x) > (y) ? (x) : (y)
 
-template <typename T>
-int clamp_input(T val, T min, T max) {
+template <typename T> int clamp_input(T val, T min, T max)
+{
     val = _min(val, max);
     return _max(val, min);
 }
