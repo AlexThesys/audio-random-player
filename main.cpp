@@ -9,10 +9,18 @@
 
 #define MAX_DATA_SIZE 0x100000
 
-bool load_files(std::vector<AudioFile<float>> &audioFiles) {
-    const char* folder = "audio_data/";
-    LPCTSTR  search_path = L"audio_data/*.*";
+bool load_files(std::vector<AudioFile<float>> &audioFiles, const char* dirpath) {
     char path[MAX_PATH];
+    memset(path, 0, sizeof(path));
+    strcpy_s(path, dirpath);
+    strcat_s(path, "/*.*");
+
+    TCHAR search_path[MAX_PATH];
+    memset(search_path, 0, sizeof(search_path));
+    if (MultiByteToWideChar(CP_UTF8, 0, path, (int)strlen(path), search_path, (int)_countof(search_path)) <= 0)
+        return false;
+
+
     char filename[MAX_PATH];
 
     audioFiles.reserve(NUM_FILES);
@@ -26,7 +34,8 @@ bool load_files(std::vector<AudioFile<float>> &audioFiles) {
             if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 memset(path, 0, sizeof(path));
                 memset(filename, 0, sizeof(filename));
-                strcpy_s(path, folder);
+                strcpy_s(path, dirpath);
+                strcat_s(path, "/");
                 const size_t path_len = ::WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, NULL, 0, 0, NULL);
                 ::WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, (LPSTR)filename, path_len, 0, NULL);
                 strcat_s(path, filename);
@@ -46,15 +55,26 @@ bool load_files(std::vector<AudioFile<float>> &audioFiles) {
     return false;
 }
 
+void process_cmdline_args(int argc, char** argv, const char** res, bool *nofadeout) {
+    bool nofade;
+    for (int i = 1, sz = _min(argc, 3); i < sz; i++) {
+        nofade = !strcmp(argv[i], "--no-fadeout");
+        if (!nofade) {
+            *res = argv[i];
+        } else {
+            *nofadeout = nofade;
+        }
+    }
+}
+
 int main(int argc, char** argv)
 {
     bool disable_fadeout = false;
-    if (argc > 1) {
-        disable_fadeout = !strcmp(argv[1], "--no-fadeout");
-    }
+    const char* path = "audio_data";
+    process_cmdline_args(argc, argv, &path, &disable_fadeout);
 
     std::vector<AudioFile<float>> audioFiles;
-    if (!load_files(audioFiles)) {
+    if (!load_files(audioFiles, path)) {
         puts("Error loading files...exiting.");
         return -1;
     }
