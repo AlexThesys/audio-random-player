@@ -40,7 +40,7 @@ static int get_input(int default_value)
 void get_user_params(play_params *data, const audio_file_container &audioFiles, bool no_fadeout)
 {
     puts("Please provide the playback parameters in decimal integer format!");
-    puts("Enter any letter to skip the parameter and use default.");
+    puts("Enter any letter to skip the current parameter and use default.");
     printf("\nEnter the walk speed in kph [1...12]:\t");
     const int walk_speed = clamp_input(get_input(DEFAULT_WALK_SPEED), MIN_WALK_SPEED, MAX_WALK_SPEED);
     printf("%d\n", walk_speed);
@@ -141,4 +141,22 @@ void process_cmdline_args(int argc, char **argv, const char **res, bool *nofadeo
             *nofadeout = nofade;
         }
     }
+}
+
+void run_user_loop(const audio_file_container &audioFiles, paData &data, play_params *p_params, bool disable_fadeout)
+{
+    int selector = 0;
+    do {
+        puts("\nEnter \'q\' to stop the playback or '\p'\ to change parameters...");
+        const char ch = getchar();
+        if (ch == 'q' || ch == 'Q') {
+            break;
+        } else if (ch == 'p' || ch == 'P') {
+            selector ^= 1;
+            get_user_params(&p_params[selector], audioFiles, disable_fadeout);
+            data.p_params = &p_params[selector];
+        } else {
+            while ((getchar()) != '\n'); // flush stdin
+        }
+    } while (true);
 }

@@ -22,14 +22,12 @@ int main(int argc, char **argv)
     data.p_params = p_params;
 
     pa_player audio_player;
-    PaError err = audio_player.init_pa(&data);
-    if (err != paNoError)
+    if (audio_player.init_pa(&data) != paNoError)
         return -1;
 
     run_user_loop(audioFiles, data, p_params, disable_fadeout);
 
-    audio_player.deinit_pa();
-    if (err != paNoError)
+    if (audio_player.deinit_pa() != paNoError)
         return -1;
 
     return 0;
