@@ -28,12 +28,13 @@ void process(buffer_container &buffer, const params &p)
         for (float &f : b) {
             float sample = f;
             for (uint32_t j = 0; j < p.num_stages; j++) {
-                const int32_t mask = *(int32_t *)&sample >> 0x1f;
+                const int32_t mask = *reinterpret_cast<int32_t *>(&sample) >> 0x1f;
                 fp32_to_u32 coeff;
                 coeff.u = (~mask & *(uint32_t *)&p.coef_pos) | (mask & *(uint32_t *)&p.coef_neg);
                 sample = (1.0f / fast_atan(coeff.f)) * fast_atan(coeff.f * sample);
-                const uint32_t inverted = *(uint32_t *)&sample ^ (0x80000000 & ~((p.invert_stages & j) - 0x01));
-                sample = *(float *)&inverted;
+                uint32_t inverted =
+                    *reinterpret_cast<uint32_t *>(&sample) ^ (0x80000000 & ~((p.invert_stages & j) - 0x01));
+                sample = *reinterpret_cast<float *>(&inverted);
             }
             sample *= p.gain;
             f = sample;

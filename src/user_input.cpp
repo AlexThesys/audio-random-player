@@ -9,8 +9,8 @@ static int calculate_step_time(int walk_speed, const audio_file_container audio_
 {
     const float step_size = 0.762f; // for an average man
     const float kph_2_mps_rec = 1.0f / 3.6f;
-    const float w_speed = ((float)walk_speed) * kph_2_mps_rec;
-    int step_num_frames = (int)ceilf((float)SAMPLE_RATE * step_size / w_speed);
+    const float w_speed = static_cast<float>(walk_speed) * kph_2_mps_rec;
+    int step_num_frames = static_cast<int>(ceilf(static_cast<float>(SAMPLE_RATE) * step_size / w_speed));
     if (no_fadeout) { // always play full length of all the files - don't fade out them
         for (size_t i = 0, sz = audio_files.size(); i < sz; i++) {
             step_num_frames = _max(step_num_frames, audio_files[i].getNumSamplesPerChannel());
@@ -28,7 +28,7 @@ static int get_input(int default_value)
 {
     char line[4];
     memset(line, 0, sizeof(line));
-    scanf_s("%s", line, (unsigned int)_countof(line));
+    scanf_s("%s", line, static_cast<unsigned int>(_countof(line)));
     char *end;
     long l = strtol((const char *)line, &end, (int)10); // C6054 is unfair
     if (end == line || end[0] != '\0') {
@@ -48,21 +48,21 @@ void get_user_params(play_params *data, const audio_file_container &audioFiles, 
     printf("\nEnter the pitch deviation in semitones [0...12]:\t");
     const int pitch_dev = clamp_input(get_input(DEFAULT_PITCH_DEVIATION), MIN_PITCH_DEVIATION, MAX_PITCH_DEVIATION);
     printf("%d\n", pitch_dev);
-    const float pitch_deviation = (float)pitch_dev;
+    const float pitch_deviation = static_cast<float>(pitch_dev);
     printf("\nEnter the volume deviation in dB [0...90]:\t");
     const int volume_lb =
         clamp_input(get_input(DEFAULT_VOLUME_LOWER_BOUND), MIN_VOLUME_LOWER_BOUND, MAX_VOLUME_LOWER_BOUND);
     printf("%d\n", volume_lb);
-    const float volume_lower_bound = calculate_volume_lower_bound((float)volume_lb);
+    const float volume_lower_bound = calculate_volume_lower_bound(static_cast<float>(volume_lb));
     printf("\nEnter the LPF frequency deviation in KHZ [0...19]:\t");
     const int lpf_f =
         clamp_input(get_input(DEFAULT_LPF_FREQ_DEVIATION), MIN_LPF_FREQ_DEVIATION, MAX_LPF_FREQ_DEVIATION);
     printf("%d\n", lpf_f);
-    const float lpf_freq = (float)lpf_f * 1000.0f;
+    const float lpf_freq = static_cast<float>(lpf_f) * 1000.0f;
     printf("\nEnter the LPF Q deviation [0...8]:\t");
     const int lpf_q_i = clamp_input(get_input(DEFAULT_LPF_Q_DEVIATION), MIN_LPF_Q_DEVIATION, MAX_LPF_Q_DEVIATION);
     printf("%d\n", lpf_q_i);
-    const float lpf_q = (float)lpf_q_i;
+    const float lpf_q = static_cast<float>(lpf_q_i);
 
     puts("\nEnter non-zero value to use LFO for volume modulation.");
     printf("Enter LFO modulation frequency in Hz [1...10]:\t");
@@ -73,17 +73,17 @@ void get_user_params(play_params *data, const audio_file_container &audioFiles, 
     if (use_lfo) {
         lfo_f = clamp_input(lfo_f, MIN_LFO_FREQ, MAX_LFO_FREQ);
         printf("%d\n", lfo_f);
-        lfo_freq = float(lfo_f);
+        lfo_freq = static_cast<float>(lfo_f);
         printf("\nEnter LFO modulation amount [0...100]:\t");
         const int lfo_a = clamp_input(get_input(DEFAULT_LFO_AMOUNT), MIN_LFO_AMOUNT, MAX_LFO_AMOUNT);
         printf("%d\n", lfo_a);
-        lfo_amount = (float)lfo_a / (float)MAX_LFO_AMOUNT;
+        lfo_amount = static_cast<float>(lfo_a) / static_cast<float>(MAX_LFO_AMOUNT);
     }
 
     while ((getchar()) != '\n'); // flush stdin
 
     printf("\nEnable distortion? [y/n]\t");
-    char ch = (char)getchar();
+    char ch = static_cast<char>(getchar());
     const bool enable_dist = (ch == 'y' || ch == 'Y');
     printf("%c\n", enable_dist ? 'y' : 'n');
 
@@ -148,7 +148,7 @@ void run_user_loop(const audio_file_container &audio_files, pa_data &data, play_
     int selector = 0;
     do {
         puts("\nEnter \'q\' to stop the playback or \'p\' to change parameters...");
-        const char ch = (char)getchar();
+        const char ch = static_cast<char>(getchar());
         if (ch == 'q' || ch == 'Q') {
             break;
         } else if (ch == 'p' || ch == 'P') {

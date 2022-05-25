@@ -3,11 +3,11 @@
 inline void apply_fadeout(std::vector<float> &dest, size_t out_samples)
 {
     constexpr int fade_prefered_lenght = 40;
-    const int count = (int)out_samples;
+    const int count = static_cast<int>(out_samples);
     const int fade_out = (count < fade_prefered_lenght) ? count : fade_prefered_lenght;
-    const float decrement = 1.0f / (float)fade_out;
+    const float decrement = 1.0f / static_cast<float>(fade_out);
     float factor = 1.0f;
-    for (size_t i = out_samples - (size_t)fade_out; i < out_samples; i++) {
+    for (size_t i = out_samples - static_cast<size_t>(fade_out); i < out_samples; i++) {
         dest[i] *= factor;
         factor -= decrement;
     }
@@ -43,8 +43,8 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
                 const float x = float(i) * d;
                 const int y = int(x);
                 const float z = x - float(y);
-                assert((size_t)y < in_samples);
-                const size_t idx = j + (size_t)y;
+                assert(static_cast<size_t>(y) < in_samples);
+                const size_t idx = j + static_cast<size_t>(y);
                 if ((idx + 1) >= sz)
                     break;
                 const float res = source[ch][idx] * (1.0f - z) + source[ch][idx + 1] * z;
