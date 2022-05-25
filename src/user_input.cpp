@@ -5,15 +5,15 @@
 #include "user_input.h"
 #include "utils.h"
 
-static int calculate_step_time(int walk_speed, const audio_file_container audioFiles, bool no_fadeout)
+static int calculate_step_time(int walk_speed, const audio_file_container audio_files, bool no_fadeout)
 {
     const float step_size = 0.762f; // for an average man
     const float kph_2_mps_rec = 1.0f / 3.6f;
     const float w_speed = ((float)walk_speed) * kph_2_mps_rec;
     int step_num_frames = ceilf((float)SAMPLE_RATE * step_size / w_speed);
     if (no_fadeout) { // always play full length of all the files - don't fade out them
-        for (int i = 0, sz = audioFiles.size(); i < sz; i++) {
-            step_num_frames = _max(step_num_frames, audioFiles[i].getNumSamplesPerChannel());
+        for (int i = 0, sz = audio_files.size(); i < sz; i++) {
+            step_num_frames = _max(step_num_frames, audio_files[i].getNumSamplesPerChannel());
         }
     }
     return step_num_frames;
@@ -67,7 +67,7 @@ void get_user_params(play_params *data, const audio_file_container &audioFiles, 
     puts("\nEnter non-zero value to use LFO for volume modulation.");
     printf("Enter LFO modulation frequency in Hz [1...10]:\t");
     int lfo_f = get_input(DEFAULT_LFO_FREQ);
-    bool use_lfo = !!lfo_f;
+    const bool use_lfo = !!lfo_f;
     float lfo_freq = 0.0f;
     float lfo_amount = 0.0f;
     if (use_lfo) {
@@ -93,39 +93,39 @@ void get_user_params(play_params *data, const audio_file_container &audioFiles, 
                enable_dist);
 }
 
-bool load_files(audio_file_container &audioFiles, const char *dirpath)
+bool load_files(audio_file_container &audio_files, const char *folder_path)
 {
     char path[MAX_PATH];
     memset(path, 0, sizeof(path));
-    strcpy_s(path, dirpath);
+    strcpy_s(path, folder_path);
     strcat_s(path, "\\*.wav");
 
-    audioFiles.reserve(NUM_FILES);
+    audio_files.reserve(NUM_FILES);
 
     size_t total_size = 0;
 
     WIN32_FIND_DATA fd;
-    HANDLE hFind = ::FindFirstFile(path, &fd);
-    if (hFind != INVALID_HANDLE_VALUE) {
+    HANDLE h_find = ::FindFirstFile(path, &fd);
+    if (h_find != INVALID_HANDLE_VALUE) {
         do {
             if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 memset(path, 0, sizeof(path));
-                strcpy_s(path, dirpath);
+                strcpy_s(path, folder_path);
                 strcat_s(path, "\\");
                 strcat_s(path, fd.cFileName);
 
-                audioFiles.push_back(AudioFile<float>());
-                audioFiles.back().load(path);
+                audio_files.push_back(AudioFile<float>());
+                audio_files.back().load(path);
                 total_size +=
-                    audioFiles.back().getNumSamplesPerChannel() * audioFiles.back().getNumChannels() * sizeof(float);
+                    audio_files.back().getNumSamplesPerChannel() * audio_files.back().getNumChannels() * sizeof(float);
                 if (total_size > MAX_DATA_SIZE) {
                     puts("Max data size exceeded, no more files are going to be loaded.");
                     break;
                 }
             }
-        } while (::FindNextFile(hFind, &fd));
-        ::FindClose(hFind);
-        return !!audioFiles.size();
+        } while (::FindNextFile(h_find, &fd));
+        ::FindClose(h_find);
+        return !!audio_files.size();
     }
     return false;
 }
@@ -143,7 +143,7 @@ void process_cmdline_args(int argc, char **argv, const char **res, bool *nofadeo
     }
 }
 
-void run_user_loop(const audio_file_container &audioFiles, paData &data, play_params *p_params, bool disable_fadeout)
+void run_user_loop(const audio_file_container &audio_files, paData &data, play_params *p_params, bool disable_fadeout)
 {
     int selector = 0;
     do {
@@ -153,7 +153,7 @@ void run_user_loop(const audio_file_container &audioFiles, paData &data, play_pa
             break;
         } else if (ch == 'p' || ch == 'P') {
             selector ^= 1;
-            get_user_params(&p_params[selector], audioFiles, disable_fadeout);
+            get_user_params(&p_params[selector], audio_files, disable_fadeout);
             data.p_params = &p_params[selector];
         } else {
             while ((getchar()) != '\n'); // flush stdin

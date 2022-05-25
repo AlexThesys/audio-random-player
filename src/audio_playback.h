@@ -9,34 +9,34 @@
 
 struct play_data
 {
-    const audio_file_container *audioFile;
+    const audio_file_container *audio_file;
     buffer_container processing_buffer;
-    std::vector<int> frameIndex;
-    int fileID;
-    uint32_t cacheId;
+    std::vector<int> frame_index;
+    int file_id;
+    uint32_t cache_id;
     float pitch;
     float volume;
-    int numStepFrames;
+    int num_step_frames;
     bool use_lfo;
     bool waveshaper_enabled;
 
     void init(const audio_file_container *af)
     {
-        audioFile = af;
-        fileID = 0;
-        cacheId = 0;
+        audio_file = af;
+        file_id = 0;
+        cache_id = 0;
         pitch = 1.0f;
         volume = 1.0f;
-        numStepFrames = 0;
+        num_step_frames = 0;
         waveshaper_enabled = false;
         use_lfo = false;
-        frameIndex.resize(audioFile->size(), 0);
+        frame_index.resize(audio_file->size(), 0);
     }
 };
 
 struct play_params
 {
-    int numStepFrames;
+    int num_step_frames;
     float pitch_deviation;
     float volume_lower_bound;
     float lpf_freq_range;
@@ -48,7 +48,7 @@ struct play_params
 
     void init(int nsf, float pd, float vlb, float lfr, float lqr, float lf, float la, bool ul, bool we)
     {
-        numStepFrames = nsf;
+        num_step_frames = nsf;
         pitch_deviation = pd;
         volume_lower_bound = vlb;
         lpf_freq_range = lfr;
@@ -92,10 +92,9 @@ class pa_player
     pa_player() : _stream(nullptr)
     {
     }
-    static int playCallback(const void *inputBuffer, void *outputBuffer, unsigned long framesPerBuffer,
-                            const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags,
-                            void *userData);
-
-    int init_pa(paData *);
+    static int playCallback(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
+        const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
+        void* user_data);
+    int init_pa(paData *data);
     int deinit_pa();
 };

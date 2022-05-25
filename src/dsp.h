@@ -66,7 +66,8 @@ struct vec
     }
 };
 
-template <int num_channels> struct filter_base
+template <int num_channels> 
+struct filter_base
 {
     vec b12a01;
     vec h0123[num_channels];
@@ -130,7 +131,8 @@ template <int num_channels> struct filter_base
 };
 
 //	Biquad Second Order IIR Low pass Filter
-template <int num_channels> struct low_pass : public filter_base<num_channels>
+template <int num_channels> 
+struct low_pass : public filter_base<num_channels>
 {
     inline void setup(CalcT normFreq, CalcT q)
     {
