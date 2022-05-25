@@ -1,6 +1,6 @@
 #include "audio_processing.h"
 
-inline void apply_fadeout(buffer_container &dest, size_t out_samples, size_t ch)
+inline void apply_fadeout(std::vector<float> &dest, size_t out_samples)
 {
     constexpr int fade_prefered_lenght = 40;
     const int count = (int)out_samples;
@@ -8,7 +8,7 @@ inline void apply_fadeout(buffer_container &dest, size_t out_samples, size_t ch)
     const float decrement = 1.0f / (float)fade_out;
     float factor = 1.0f;
     for (size_t i = out_samples - (size_t)fade_out; i < out_samples; i++) {
-        dest[ch][i] *= factor;
+        dest[i] *= factor;
         factor -= decrement;
     }
 }
@@ -28,7 +28,7 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
             // if it's the last one - pad with zeros
             if (out_samples < frames_per_buffer) {
                 if (fadeout)
-                    apply_fadeout(dest, out_samples, ch);
+                    apply_fadeout(dest[ch], out_samples);
                 for (; i < frames_per_buffer; i++) {
                     dest[ch][i] = 0.0f;
                 }
@@ -53,7 +53,7 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
             // if it's the last one - pad with zeros
             if (out_samples < frames_per_buffer) {
                 if (fadeout)
-                    apply_fadeout(dest, out_samples, ch);
+                    apply_fadeout(dest[ch], out_samples);
                 for (; i < frames_per_buffer; i++) {
                     dest[ch][i] = 0.0f;
                 }
@@ -68,15 +68,15 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
 void apply_volume(buffer_container &buffer, float volume, bool use_lfo, dsp::wavetable &lfo_gen)
 {
     if (!use_lfo) {
-        for (size_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
-            for (size_t i = 0, sz = buffer[ch].size(); i < sz; i++) {
-                buffer[ch][i] *= volume;
+        for (std::vector<float> &b : buffer) {
+            for (float &f : b) {
+                f *= volume;
             }
         }
     } else {
         for (size_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
-            for (size_t i = 0, sz = buffer[ch].size(); i < sz; i++) {
-                buffer[ch][i] *= lfo_gen.update(ch);
+            for (float &f : buffer[ch]) {
+                f *= lfo_gen.update(ch);
             }
         }
     }

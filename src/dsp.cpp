@@ -24,9 +24,9 @@ inline float fast_atan(float x)
 
 void process(buffer_container &buffer, const params &p)
 {
-    for (uint32_t ch = 0, num_ch = (uint32_t)buffer.size(); ch < num_ch; ch++) {
-        for (uint32_t i = 0, frames = (uint32_t)buffer[ch].size(); i < frames; i++) {
-            float sample = buffer[ch][i];
+    for (std::vector<float> &b : buffer) {
+        for (float &f : b) {
+            float sample = f;
             for (uint32_t j = 0; j < p.num_stages; j++) {
                 const int32_t mask = *(int32_t *)&sample >> 0x1f;
                 fp32_to_u32 coeff;
@@ -36,7 +36,7 @@ void process(buffer_container &buffer, const params &p)
                 sample = *(float *)&inverted;
             }
             sample *= p.gain;
-            buffer[ch][i] = sample;
+            f = sample;
         }
     }
 }

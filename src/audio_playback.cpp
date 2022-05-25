@@ -32,7 +32,7 @@ static void randomize_data(pa_data *data)
     if (data->p_data.use_lfo)
         lfo_gen.set_rate(data->p_params->lfo_freq, data->p_params->lfo_amount);
     data->p_data.waveshaper_enabled = data->p_params->waveshaper_enabled;
-    data->p_data.frame_index[data->p_data.file_id] = 0;
+    data->p_data.frame_index[(size_t)data->p_data.file_id] = 0;
 }
 
 inline void process_audio(float *out_buffer, pa_data *data, size_t frames_per_buffer)
