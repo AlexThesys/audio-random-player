@@ -1,5 +1,49 @@
-***Feature List***
+***Main Features List***
+
+* Looped audio playback of the provided files in random order without playing the same sound twice in a row
+* Setting the speed of the playback which emulates (sort of) walking speed
+* Randomized pitch with custom parameters
+* Volume can be either randomized or modulated with a built-in LFO
+* Low pass filter with randomized cutoff frequency and Q
+* Optional distortion processing
+* Ability to enter custom parameters from console and change the on the fly
+* Option to specify audio files folder
 
 ***Description***
 
+- I didn't try to adopt the code style that you use in cryengine in this project because of the time constrains. Instead I went with what I am more used to prioritize consistency (although I aslo used clang format).
+- I've intentionaly avoided using std::string and iostream operations. I didn't have enough time to find a library with a proper implementation, so I resorted to using C API for string, std io and file io operations.
+- Probably my main desing decision in how the playback is handled. Specifically how I count frames played instead of time. For this type of radnom container within a timeframe that I had available I went for a simpler solution. If were to try and implement sample accurate switching between audio files, then I would've went with counting time.
+- The randomization of the parameters happens, when the next file is (randomly) selected. The randomizer itself (librandom.h) is not my code, I just wanted something simpler and more lightweight that what c++ <random> provides.
+- Since provided audio files contain step sounds, I've decided that it would be interesting to specify the playback speed as a walking speed (in kph) instead of a more generic solution.
+- I used linear interpolation for handling audio pitch. User can provide the pitch range in semitones.
+- The volume can be either randomized within a range (specified in dB) or be modulated via LFO. If using randomization user is specifing the lower bound of the range (upper is 0 dB).
+- Filter is a simple second order biquad low pass filter. I think the processing function is pretty efficient though. 
+- LFO is a wavetable precomputed at the start of the application. It has configurable rate and amount parameters. It can only produce sine wave.
+- Distortion has no user-configurable parameters. It can either be turnen on or off. I've done the vectorized version of it beforehand, but decided to go with a simpler one here.
+- All the user parameters can be entered from console and changed while the application is running without interrupting the playback. Despite having no sycnronization primives between main and audio threads, I've made sure that the data won't be corrupted. Basically I use double buffering and switch the pointer (shared between thread) atomically.
+- Two commandline parameters can be optionally provided to the programm (in any order):
+	1. Custom path to the folder containing audio files. If not provided, application will use the default path relative to solution. Its going to try and load all the *.wav files in this folder.
+	2. --no-fadeout - this changes the behavior of how the playback is handled when the timeframe (defined by "walk speed") is less than the current file lenght.
+- I've provided	both a .sln file and a cmake file just in case. The former is a prefered option. If generatin solution with cmake you might need to manually specify the path to the folder containig audio files. When using solution file it should be found automatically.
+- Note that due to the way cmake generate solutions, in order for it to be compatitable with the provided solution file out of the box the 'Character Set' option is set to 'Use Multi-Byte Character Set'. 
+
 ***Limitations & Future Improvements***
+
+* Streaming of audio files:
+	For now all the files are just loaded into memory on the start (althoug there is a hard limit on the total data size). In a real application the loading should be handeled on a separate thread in chunks as needed.
+* SIMD DSP processing:
+	Didn't have time to vectorize most of the DSP computations. Although manual vectorization by itself would've not been that hard, I've decided aginst doing it for now for two main reasons: 
+			1. It would've been required to properly handle data aligment and padding, which I didn't have time to do.
+			2. I didn't have time to profile the application and going blind would've been pointless.
+
+* Option to load parameters from a configuration file.
+* Ability to play sounds completly seamlesly - sample accurate:
+	My solution does not currently provide this option. To implement this it'll be required to almost completely rewrite all the playback code. It would be a different type of container then. But all the processing code should be reusable.
+* Ability to blend different sounds:
+	Once again it would be a different type of a container in terms of how a playback is handled, but still an interesting future project.
+* Reverberation:
+	Didn't have time to implement reverb. I have a solution for reverberation that I made before, but it can only handle four channel output. And it would've taken me too much time to implement something from scratch, that would actually sound any good. So, its' also something to do in the future.
+* Add more waveforms to the LFO.
+* Alternative interpolation method (e.g. cubic) for the audio pitch.
+* User parameters for distortion.
