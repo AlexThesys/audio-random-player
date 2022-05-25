@@ -13,32 +13,21 @@ bool load_files(std::vector<AudioFile<float>> &audioFiles, const char* dirpath) 
     char path[MAX_PATH];
     memset(path, 0, sizeof(path));
     strcpy_s(path, dirpath);
-    strcat_s(path, "/*.*");
-
-    TCHAR search_path[MAX_PATH];
-    memset(search_path, 0, sizeof(search_path));
-    if (MultiByteToWideChar(CP_UTF8, 0, path, (int)strlen(path), search_path, (int)_countof(search_path)) <= 0)
-        return false;
-
-
-    char filename[MAX_PATH];
+    strcat_s(path, "\\*.wav");
 
     audioFiles.reserve(NUM_FILES);
 
     size_t total_size = 0;
 
     WIN32_FIND_DATA fd;
-    HANDLE hFind = ::FindFirstFile(search_path, &fd);
+    HANDLE hFind = ::FindFirstFile(path, &fd);
     if (hFind != INVALID_HANDLE_VALUE) {
         do {
             if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 memset(path, 0, sizeof(path));
-                memset(filename, 0, sizeof(filename));
                 strcpy_s(path, dirpath);
-                strcat_s(path, "/");
-                const size_t path_len = ::WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, NULL, 0, 0, NULL);
-                ::WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, (LPSTR)filename, path_len, 0, NULL);
-                strcat_s(path, filename);
+                strcat_s(path, "\\");
+                strcat_s(path, fd.cFileName);
 
                 audioFiles.push_back(AudioFile<float>());
                 audioFiles.back().load(path);
@@ -50,7 +39,7 @@ bool load_files(std::vector<AudioFile<float>> &audioFiles, const char* dirpath) 
             }
         } while (::FindNextFile(hFind, &fd));
         ::FindClose(hFind);
-        return true;
+        return !!audioFiles.size();
     }
     return false;
 }
