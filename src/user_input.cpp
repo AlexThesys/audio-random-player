@@ -10,9 +10,9 @@ static int calculate_step_time(int walk_speed, const audio_file_container audio_
     const float step_size = 0.762f; // for an average man
     const float kph_2_mps_rec = 1.0f / 3.6f;
     const float w_speed = ((float)walk_speed) * kph_2_mps_rec;
-    int step_num_frames = ceilf((float)SAMPLE_RATE * step_size / w_speed);
+    int step_num_frames = (int)ceilf((float)SAMPLE_RATE * step_size / w_speed);
     if (no_fadeout) { // always play full length of all the files - don't fade out them
-        for (int i = 0, sz = audio_files.size(); i < sz; i++) {
+        for (size_t i = 0, sz = audio_files.size(); i < sz; i++) {
             step_num_frames = _max(step_num_frames, audio_files[i].getNumSamplesPerChannel());
         }
     }
@@ -30,7 +30,7 @@ static int get_input(int default_value)
     memset(line, 0, sizeof(line));
     scanf_s("%s", line, (unsigned int)_countof(line));
     char *end;
-    long l = strtol((const char *)line, &end, (int)10);
+    long l = strtol((const char *)line, &end, (int)10); // C6054 is unfair
     if (end == line || end[0] != '\0') {
         l = default_value;
     }
@@ -83,7 +83,7 @@ void get_user_params(play_params *data, const audio_file_container &audioFiles, 
     while ((getchar()) != '\n'); // flush stdin
 
     printf("\nEnable distortion? [y/n]\t");
-    char ch = getchar();
+    char ch = (char)getchar();
     const bool enable_dist = (ch == 'y' || ch == 'Y');
     printf("%c\n", enable_dist ? 'y' : 'n');
 
@@ -143,12 +143,12 @@ void process_cmdline_args(int argc, char **argv, const char **res, bool *nofadeo
     }
 }
 
-void run_user_loop(const audio_file_container &audio_files, paData &data, play_params *p_params, bool disable_fadeout)
+void run_user_loop(const audio_file_container &audio_files, pa_data &data, play_params *p_params, bool disable_fadeout)
 {
     int selector = 0;
     do {
-        puts("\nEnter \'q\' to stop the playback or '\p'\ to change parameters...");
-        const char ch = getchar();
+        puts("\nEnter \'q\' to stop the playback or \'p\' to change parameters...");
+        const char ch = (char)getchar();
         if (ch == 'q' || ch == 'Q') {
             break;
         } else if (ch == 'p' || ch == 'P') {

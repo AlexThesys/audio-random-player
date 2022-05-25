@@ -12,13 +12,20 @@ struct play_data
     const audio_file_container *audio_file;
     buffer_container processing_buffer;
     std::vector<int> frame_index;
-    int file_id;
+    unsigned int file_id;
     uint32_t cache_id;
     float pitch;
     float volume;
-    int num_step_frames;
+    unsigned int num_step_frames;
     bool use_lfo;
     bool waveshaper_enabled;
+    // padding 2 bytes
+
+    play_data()
+        : audio_file(nullptr), file_id(0), cache_id(0), pitch(1.0f), volume(1.0f), num_step_frames(0), use_lfo(false),
+          waveshaper_enabled(false)
+    {
+    }
 
     void init(const audio_file_container *af)
     {
@@ -45,6 +52,7 @@ struct play_params
     float lfo_amount;
     bool use_lfo;
     bool waveshaper_enabled;
+    // padding 2 bytes
 
     void init(int nsf, float pd, float vlb, float lfr, float lqr, float lf, float la, bool ul, bool we)
     {
@@ -60,17 +68,23 @@ struct play_params
     }
 };
 
-struct paData
+struct pa_data
 {
     play_data p_data;
     play_params *volatile p_params;
 
-    paData(const audio_file_container *af) : p_params(nullptr)
+    pa_data(const audio_file_container *af) : p_params(nullptr)
     {
         p_data.init(af);
     }
 
-    void resize_processing_buffer(int num_frames)
+    // C5220
+    pa_data(const pa_data&) = delete;
+    pa_data& operator=(const pa_data&) = delete;
+    pa_data(pa_data&&) = delete;
+    pa_data& operator=(pa_data&&) = delete;
+
+    void resize_processing_buffer(size_t num_frames)
     {
         p_data.processing_buffer[0].resize(num_frames);
         p_data.processing_buffer[1].resize(num_frames);
@@ -95,6 +109,6 @@ class pa_player
     static int playCallback(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
         const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
         void* user_data);
-    int init_pa(paData *data);
+    int init_pa(pa_data *data);
     int deinit_pa();
 };

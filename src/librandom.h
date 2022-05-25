@@ -16,6 +16,12 @@ class simple
     {
     }
 
+    // C5220
+    simple(const simple &) = delete;
+    simple &operator=(const simple &) = delete;
+    simple(simple &&) = delete;
+    simple &operator=(simple &&) = delete;
+
     inline void seed(const int64_t val)
     {
         holdrand = val;
@@ -98,13 +104,13 @@ template <typename holder_t = uint32_t> struct cache_t
         // priori fullness
         check_all(size);
         // routine
-        while (!check_cache(idx, size)) {
+        while (!check_cache((uint8_t)idx, size)) {
             if (++idx >= size)
                 idx = 0;
         }
         // posteriori fullness
         if (check_all(size))
-            check_cache(idx, size); // mark current as passed
+            check_cache((uint8_t)idx, size); // mark current as passed
         return (idx);
     }
 

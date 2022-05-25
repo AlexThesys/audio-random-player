@@ -14,7 +14,7 @@ inline float semitones_to_pitch_scale(float semitones_dev)
     return powf(2.0f, semitones / 12.0f);
 }
 
-static void randomize_data(paData *data)
+static void randomize_data(pa_data *data)
 {
     const int num_files = data->p_data.audio_file->size();
     uint32_t rnd_id = random_gen.i(num_files - 1);
@@ -34,7 +34,7 @@ static void randomize_data(paData *data)
     data->p_data.waveshaper_enabled = data->p_params->waveshaper_enabled;
 }
 
-inline void process_audio(float *out_buffer, paData *data, unsigned long frames_per_buffer)
+inline void process_audio(float *out_buffer, pa_data *data, unsigned long frames_per_buffer)
 {
     const float volume = data->p_data.volume;
     const int file_id = data->p_data.file_id;
@@ -95,7 +95,7 @@ int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsig
     (void)time_info;
     (void)status_flags;
 
-    paData *data = (paData *)user_data;
+    pa_data *data = (pa_data *)user_data;
 
     if (!data->p_data.frame_index[data->p_data.file_id])
         randomize_data(data);
@@ -105,7 +105,7 @@ int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsig
     return paContinue;
 }
 
-int pa_player::init_pa(paData *data)
+int pa_player::init_pa(pa_data *data)
 {
     data->resize_processing_buffer(FRAMES_PER_BUFFER);
 

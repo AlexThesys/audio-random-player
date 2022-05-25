@@ -24,8 +24,8 @@ inline float fast_atan(float x)
 
 void process(buffer_container &buffer, const params &p)
 {
-    for (uint32_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
-        for (uint32_t i = 0, frames = buffer[ch].size(); i < frames; i++) {
+    for (uint32_t ch = 0, num_ch = (uint32_t)buffer.size(); ch < num_ch; ch++) {
+        for (uint32_t i = 0, frames = (uint32_t)buffer[ch].size(); i < frames; i++) {
             float sample = buffer[ch][i];
             for (uint32_t j = 0; j < p.num_stages; j++) {
                 const int32_t mask = *(int32_t *)&sample >> 0x1f;

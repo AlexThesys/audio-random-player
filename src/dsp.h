@@ -15,8 +15,8 @@ struct params
 {
     float coef_pos;
     float coef_neg;
-    int32_t num_stages;
-    int32_t invert_stages;
+    uint32_t num_stages;
+    uint32_t invert_stages;
     float gain;
 };
 
@@ -71,7 +71,8 @@ struct filter_base
 {
     vec b12a01;
     vec h0123[num_channels];
-    float padding;
+    float pad;
+    // padding 12 bytes
 
   public:
     filter_base()
@@ -88,7 +89,7 @@ struct filter_base
 
         b12a01.data[2] = -a1 * inv_a0;
         b12a01.data[3] = -a2 * inv_a0;
-        padding = b0 * inv_a0;
+        pad = b0 * inv_a0;
         b12a01.data[0] = b1 * inv_a0;
         b12a01.data[1] = b2 * inv_a0;
     }
@@ -96,20 +97,17 @@ struct filter_base
     inline CalcT processI(CalcT in, int ch = 0)
     {
         assert(ch < num_channels);
-        if (0)
-        {
-            CalcT out = padding * in + b12a01.data[0] * h0123[ch].data[0] + b12a01.data[1] * h0123[ch].data[1] +
+        if (0) {
+            CalcT out = pad * in + b12a01.data[0] * h0123[ch].data[0] + b12a01.data[1] * h0123[ch].data[1] +
                         b12a01.data[2] * h0123[ch].data[2] + b12a01.data[3] * h0123[ch].data[3];
             h0123[ch].data[1] = h0123[ch].data[0];
             h0123[ch].data[0] = in;
             h0123[ch].data[3] = h0123[ch].data[2];
             h0123[ch].data[2] = out;
             return out;
-        }
-        else
-        {
+        } else {
 
-            float out = padding * in + b12a01._dot4(h0123[ch]);
+            float out = pad * in + b12a01._dot4(h0123[ch]);
 
             __m128 io = _mm_unpacklo_ps(_mm_set_ss(in), _mm_set_ss(out));
             __m128 h0h2 = _mm_shuffle_ps(h0123[ch].m, h0123[ch].m, _MM_SHUFFLE(2, 0, 2, 0));
@@ -136,18 +134,18 @@ struct low_pass : public filter_base<num_channels>
 {
     inline void setup(CalcT normFreq, CalcT q)
     {
-        CalcT w0 = 2 * kPi * normFreq;
+        CalcT w0 = CalcT(2.0) * PI * normFreq;
         CalcT cs = cos(w0);
         CalcT sn = sin(w0);
-        CalcT ncs = 1 - cs;
+        CalcT ncs = CalcT(1.0) - cs;
 
-        CalcT alph = sn / (2 * q);
+        CalcT alph = sn / (CalcT(2.0) * q);
         CalcT b0 = ncs * CalcT(0.5);
         CalcT b1 = ncs;
         CalcT b2 = b0;
-        CalcT a0 = 1 + alph;
-        CalcT a1 = -2 * cs;
-        CalcT a2 = 1 - alph;
+        CalcT a0 = CalcT(1.0) + alph;
+        CalcT a1 = -CalcT(2.0) * cs;
+        CalcT a2 = CalcT(1.0) - alph;
 
         filter_base<num_channels>::setup(a0, a1, a2, b0, b1, b2);
     }
@@ -166,9 +164,9 @@ class filter
     }
     void process(buffer_container &buffer)
     {
-        for (int ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
+        for (size_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
             float *dest = buffer[ch].data();
-            _lpf.process(buffer[ch].size(), dest, ch);
+            _lpf.process(buffer[ch].size(), dest, (int)ch);
         }
     }
 };
@@ -184,7 +182,7 @@ class wavetable
     wavetable() : _inc(0.0f), _amount(0.0f)
     {
         for (int i = 0; i < LFO_BUFFER_SIZE; i++) {
-            _buffer[i] = (1.0f - sinf(((float)i / (float)LFO_BUFFER_SIZE) * 2.0f * kPi)) * 0.5f;
+            _buffer[i] = (1.0f - sinf(((float)i / (float)LFO_BUFFER_SIZE) * 2.0f * PI)) * 0.5f;
         }
         memset(_read_idx, 0, sizeof(_read_idx));
     }

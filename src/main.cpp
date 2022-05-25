@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     }
 
     play_params p_params[2];
-    paData data = paData(&audioFiles);
+    pa_data data(&audioFiles);
     get_user_params(p_params, audioFiles, disable_fadeout);
     data.p_params = p_params;
 
