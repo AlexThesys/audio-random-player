@@ -5,16 +5,11 @@
 #include "portaudio.h"
 #include "AudioFile.h"
 #include "librandom.h"
-
-#define SAMPLE_RATE (48000)
-#define NUM_CHANNELS 2
-
-#define _min(x, y) (x) < (y) ? (x) : (y)
-#define _max(x, y) (x) > (y) ? (x) : (y)
+#include "audio_processing.h"
 
 struct play_data {
-    const std::vector<AudioFile<float>>* audioFile;
-    std::array<std::vector<float>, 2> processing_buffer;
+    const audio_file_container* audioFile;
+    buffer_container processing_buffer;
     std::vector<int> frameIndex;
     int fileID;
     uint32_t cacheId;
@@ -24,7 +19,7 @@ struct play_data {
     bool use_lfo;
     bool waveshaper_enabled;
 
-    void init(const std::vector<AudioFile<float>> *af) {
+    void init(const audio_file_container*af) {
         audioFile = af;
         fileID = 0;
         cacheId = 0;
@@ -66,7 +61,7 @@ struct paData
     play_data p_data;
     play_params * volatile p_params;
 
-    paData(const std::vector<AudioFile<float>>* af) : p_params(nullptr) {
+    paData(const audio_file_container* af) : p_params(nullptr) {
         p_data.init(af);
     }
 

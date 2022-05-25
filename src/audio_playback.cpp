@@ -1,17 +1,9 @@
 #include "audio_playback.h"
-#include "audio_processing.h"
+#include "constants.h"
+#include "utils.h"
 
-#define verify_pa_no_error_verbose(err)\
-if( (err) != paNoError ) {\
-    printf(  "PortAudio error: %s\n", Pa_GetErrorText( err ) );\
-    return err;\
-}
 
 #define PA_SAMPLE_TYPE  paFloat32
-#define FRAMES_PER_BUFFER 256
-#define MAX_VOLUME 1.0f
-#define MAX_LPF_FREQ 20000.0f
-#define DEFAULT_LPF_Q 0.707f
 
 static librandom::simple random_gen;
 static dsp::filter lp_filter;
@@ -67,7 +59,7 @@ int pa_player::playCallback(const void* inputBuffer, void* outputBuffer,
         const int audioFramesLeft = total_samples - frameIndex;
         const int out_samples = _min(audioFramesLeft, (int)framesPerBuffer);
         const int in_samples = (int)(float(out_samples) * data->p_data.pitch);
-        std::array<std::vector<float>, 2>& processing_buffer = data->p_data.processing_buffer;
+        buffer_container& processing_buffer = data->p_data.processing_buffer;
         
         const int frames_read = resample(audioFile.samples, processing_buffer, frameIndex, in_samples, 
             out_samples, (int)framesPerBuffer, audioFile.getNumChannels(), (total_samples < audioFile.getNumSamplesPerChannel()));
