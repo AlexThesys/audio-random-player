@@ -22,7 +22,7 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
         // common case - just copy and attenuate
         for (size_t ch = 0; ch < num_ch; ch++) {
             i = 0;
-            for (size_t j = file_offset; i < in_samples; i++, j++) {
+            for (size_t j = file_offset; i < out_samples; i++, j++) {
                 dest[ch][i] = source[ch][j];
             }
             // if it's the last one - pad with zeros
