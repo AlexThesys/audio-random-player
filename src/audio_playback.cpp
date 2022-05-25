@@ -18,7 +18,7 @@ static void randomize_data(pa_data *data)
 {
     const int num_files = (int)data->p_data.audio_file->size();
     uint32_t rnd_id = (uint32_t)random_gen.i(num_files - 1);
-    librandom::cache cache(data->p_data.cache_id);
+    cache cache(data->p_data.cache_id);
     rnd_id = cache.check(rnd_id, (uint8_t)num_files);
     data->p_data.cache_id = cache.value();
     data->p_data.file_id = (int)rnd_id;
