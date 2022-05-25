@@ -11,7 +11,7 @@
 
 ***Description***
 - Overall I tryed to keep my solution simple, solving specifically the problems at hand. I didn't attempt to design the system to be a part of something bigger or 'design for the future', although I still tryed to make certain parts of the code reusable.
-- I didn't try to adopt the code style that you use in cryengine in this project because of the time constrains. Instead I went with what I am more used to prioritize consistency (although I aslo used clang format).
+- I didn't try to adopt the code style that you use in cryengine in this project because of the time constrains. Instead I went with what I am more used (with slight modifications, e.g. no C-style casts) to prioritize consistency (although I used clang format). Overall I tryed not to overcomplicate things for no reason.
 - I've intentionaly avoided using std::string and iostream operations. I didn't have enough time to find a library with a proper implementation, so I resorted to using C API for string, std io and file io operations.
 - Probably my main desing decision in how the playback is handled. For this type of random container, within a timeframe that I had available, I went for a simpler solution. If I were to try and implement sample accurate switching between audio files, then I'd need to have the next file prepared when the previous one stops plaing within the same callback. With the current solution the switch to the next file would only be possible on the next callback.
 - The randomization of the parameters happens, when the next file is (randomly) selected. The randomizer itself (librandom.h) is not my code, I just wanted something simpler and more lightweight that what c++ <random> provides.
