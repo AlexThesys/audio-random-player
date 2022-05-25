@@ -192,7 +192,7 @@ class wavetable
         _inc = (float)LFO_BUFFER_SIZE * freq / SAMPLE_RATE;
         _amount = amount;
     }
-    float update(int ch)
+    float update(size_t ch)
     {
         int r_idx = (int)_read_idx[ch];
         float frac = _read_idx[ch] - (float)r_idx;

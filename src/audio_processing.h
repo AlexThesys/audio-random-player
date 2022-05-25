@@ -2,7 +2,7 @@
 
 #include "dsp.h"
 
-int resample(const AudioFile<float>::AudioBuffer &source, buffer_container &dest, int file_offset, int in_samples,
-             int out_samples, int frames_per_buffer, int num_ch, bool fadeout);
+size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &dest, size_t file_offset,
+                size_t in_samples, size_t out_samples, size_t frames_per_buffer, size_t num_ch, bool fadeout);
 
 void apply_volume(buffer_container &buffer, float volume, bool use_lfo, dsp::wavetable &lfo_gen);

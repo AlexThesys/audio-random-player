@@ -41,7 +41,6 @@ inline void process_audio(float *out_buffer, pa_data *data, unsigned long frames
     const int frame_index = data->p_data.frame_index[file_id];
     const bool waveshaper_enabled = data->p_data.waveshaper_enabled;
     const AudioFile<float> &audio_file = (*data->p_data.audio_file)[file_id];
-    const int num_channels = audio_file.getNumChannels();
     const int stereo_file = (int)audio_file.isStereo();
     const int total_samples = _min(audio_file.getNumSamplesPerChannel(), data->p_data.num_step_frames);
     int i;
@@ -139,6 +138,8 @@ int pa_player::init_pa(pa_data *data)
     verify_pa_no_error_verbose(err);
 
     err = Pa_StartStream(_stream);
+
+    return paNoError;
 }
 
 int pa_player::deinit_pa()
@@ -151,4 +152,6 @@ int pa_player::deinit_pa()
 
     err = Pa_Terminate();
     verify_pa_no_error_verbose(err);
+
+    return paNoError;
 }
