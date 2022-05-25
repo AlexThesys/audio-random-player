@@ -12,11 +12,11 @@ struct play_data
     const audio_file_container *audio_file;
     buffer_container processing_buffer;
     std::vector<int> frame_index;
-    unsigned int file_id;
+    int file_id;
     uint32_t cache_id;
     float pitch;
     float volume;
-    unsigned int num_step_frames;
+    int num_step_frames;
     bool use_lfo;
     bool waveshaper_enabled;
     // padding 2 bytes

@@ -16,10 +16,10 @@ inline float semitones_to_pitch_scale(float semitones_dev)
 
 static void randomize_data(pa_data *data)
 {
-    const int num_files = data->p_data.audio_file->size();
-    uint32_t rnd_id = random_gen.i(num_files - 1);
+    const int num_files = (int)data->p_data.audio_file->size();
+    uint32_t rnd_id = (uint32_t)random_gen.i(num_files - 1);
     librandom::cache cache(data->p_data.cache_id);
-    rnd_id = cache.check(rnd_id, num_files);
+    rnd_id = cache.check(rnd_id, (uint8_t)num_files);
     data->p_data.cache_id = cache.value();
     data->p_data.file_id = (int)rnd_id;
     data->p_data.pitch = semitones_to_pitch_scale(data->p_params->pitch_deviation);
@@ -34,16 +34,16 @@ static void randomize_data(pa_data *data)
     data->p_data.waveshaper_enabled = data->p_params->waveshaper_enabled;
 }
 
-inline void process_audio(float *out_buffer, pa_data *data, unsigned long frames_per_buffer)
+inline void process_audio(float *out_buffer, pa_data *data, size_t frames_per_buffer)
 {
     const float volume = data->p_data.volume;
-    const int file_id = data->p_data.file_id;
+    const size_t file_id = (size_t)data->p_data.file_id;
     const int frame_index = data->p_data.frame_index[file_id];
     const bool waveshaper_enabled = data->p_data.waveshaper_enabled;
     const AudioFile<float> &audio_file = (*data->p_data.audio_file)[file_id];
-    const int stereo_file = (int)audio_file.isStereo();
-    const int total_samples = _min(audio_file.getNumSamplesPerChannel(), data->p_data.num_step_frames);
-    int i;
+    const size_t stereo_file = (size_t)audio_file.isStereo();
+    const int total_samples = _min(audio_file.getNumSamplesPerChannel(), (int)data->p_data.num_step_frames);
+    size_t i;
     if (frame_index < total_samples) {
         const int audio_frames_left = total_samples - frame_index;
         const int out_samples = _min(audio_frames_left, (int)frames_per_buffer);
@@ -51,8 +51,9 @@ inline void process_audio(float *out_buffer, pa_data *data, unsigned long frames
         buffer_container &processing_buffer = data->p_data.processing_buffer;
 
         const int frames_read =
-            resample(audio_file.samples, processing_buffer, frame_index, in_samples, out_samples, (int)frames_per_buffer,
-                     audio_file.getNumChannels(), (total_samples < audio_file.getNumSamplesPerChannel()));
+            (int)resample(audio_file.samples, processing_buffer, (size_t)frame_index, (size_t)in_samples,
+                          (size_t)out_samples, frames_per_buffer, (size_t)audio_file.getNumChannels(),
+                          (total_samples < audio_file.getNumSamplesPerChannel()));
 
         apply_volume(processing_buffer, volume, data->p_data.use_lfo, lfo_gen);
 
@@ -74,7 +75,7 @@ inline void process_audio(float *out_buffer, pa_data *data, unsigned long frames
                 *out_buffer++ = 0; /* right */
         }
         if (frame_index < data->p_data.num_step_frames) {
-            data->p_data.frame_index[file_id] += frames_per_buffer;
+            data->p_data.frame_index[file_id] += (int)frames_per_buffer;
         } else {
             data->p_data.frame_index[file_id] = 0;
         }
@@ -96,10 +97,10 @@ int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsig
 
     pa_data *data = (pa_data *)user_data;
 
-    if (!data->p_data.frame_index[data->p_data.file_id])
+    if (!data->p_data.frame_index[(size_t)data->p_data.file_id])
         randomize_data(data);
 
-    process_audio((float *)output_buffer, data, frames_per_buffer);
+    process_audio((float *)output_buffer, data, (size_t)frames_per_buffer);
 
     return paContinue;
 }
