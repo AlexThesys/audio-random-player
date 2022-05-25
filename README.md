@@ -22,6 +22,7 @@
 - LFO is a wavetable precomputed at the start of the application. It has configurable rate and amount parameters. It can only produce sine wave.
 - Distortion has no user-configurable parameters. It can either be turnen on or off. I've done the vectorized version of it beforehand, but decided to go with a simpler one here.
 - All the user parameters can be entered from console and changed while the application is running without interrupting the playback. Despite having no sycnronization primives between main and audio threads, I've made sure that the data won't be corrupted. Basically I use double buffering and switch the pointer (shared between thread) atomically.
+User can enter any random letter instead of a numeric value in order to use a default parameter value.
 - Two commandline parameters can be optionally provided to the programm (in any order):
 	1. Custom path to the folder containing audio files. If not provided, application will use the default path relative to solution. Its going to try and load all the *.wav files in this folder.
 	2. --no-fadeout - this changes the behavior of how the playback is handled when the timeframe (defined by "walk speed") is less than the current file lenght.
