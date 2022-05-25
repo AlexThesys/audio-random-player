@@ -10,7 +10,7 @@
 * Option to specify audio files folder
 
 ***Description***
-
+- Overall I tryed to keep my solution simple, solving specifically the problems at hand. I didn't attempt to design the system to be a part of something bigger or 'design for the future', although I still tryed to make certain parts of the code reusable.
 - I didn't try to adopt the code style that you use in cryengine in this project because of the time constrains. Instead I went with what I am more used to prioritize consistency (although I aslo used clang format).
 - I've intentionaly avoided using std::string and iostream operations. I didn't have enough time to find a library with a proper implementation, so I resorted to using C API for string, std io and file io operations.
 - Probably my main desing decision in how the playback is handled. Specifically how I count frames played instead of time. For this type of radnom container within a timeframe that I had available I went for a simpler solution. If were to try and implement sample accurate switching between audio files, then I would've went with counting time.
@@ -25,8 +25,8 @@
 - Two commandline parameters can be optionally provided to the programm (in any order):
 	1. Custom path to the folder containing audio files. If not provided, application will use the default path relative to solution. Its going to try and load all the *.wav files in this folder.
 	2. --no-fadeout - this changes the behavior of how the playback is handled when the timeframe (defined by "walk speed") is less than the current file lenght.
-- I've provided	both a .sln file and a cmake file just in case. The former is a prefered option. If generatin solution with cmake you might need to manually specify the path to the folder containig audio files. When using solution file it should be found automatically.
-- Note that due to the way cmake generate solutions, in order for it to be compatitable with the provided solution file out of the box the 'Character Set' option is set to 'Use Multi-Byte Character Set'. 
+- I've provided	both a .sln file and a cmake file just in case. The former is a prefered option. If generating solution with cmake you might need to manually specify the path to the folder containig audio files. When using provided .sln file, the folder should be found automatically.
+- Note that due to the way cmake generate solutions, in order for it to be compatitable with the provided .sln file out of the box, the 'Character Set' option is set to 'Use Multi-Byte Character Set'. 
 
 ***Limitations & Future Improvements***
 
