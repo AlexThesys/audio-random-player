@@ -41,7 +41,7 @@ User can enter any random letter instead of a numeric value in order to use a de
 * Unicode support for filenames and path:
 	Actually I had to remove to be compatitable with the cmake generated solution. I still have it version controlled.
 * Support for multiple samplerates, buffer sizes:
-	For now its hardcoded to 48 Khz, 256 frames
+	For now its hardcoded to 48 Khz, 256 frames. Files with different samplerate would play with a wrong pitch. Could have made it so that they would be resampled on load, but didn't have time to do that.
 * Support for multiple output channels configurations:
 	For now it only supports 2 channels stereo
 * Option to load parameters from a configuration file.
@@ -54,5 +54,7 @@ User can enter any random letter instead of a numeric value in order to use a de
 * Add more waveforms to the LFO.
 * Alternative interpolation method (e.g. cubic) for the audio pitch.
 * User parameters for distortion.
+* Bonus: option to change audio pitch without changing playback speed:
+	It would not be easy to implement (it's basically granular synthezis), but it's a pretty cool feature and I always wanted to try implementing this.
 
 - If you find any of the missing features or limitations crucial, please don't hesitate to contact me.
