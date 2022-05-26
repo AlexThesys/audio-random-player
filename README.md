@@ -10,6 +10,7 @@
 * Option to specify audio files folder
 
 ***Description***
+- Solution is x86 & Windows specific
 - Overall I tryed to keep my solution simple, solving specifically the problems at hand. I didn't attempt to design the system to be a part of something bigger or 'design for the future', although I still tryed to make certain parts of the code reusable.
 - I didn't try to adopt the code style that you use in cryengine in this project because of the time constrains. Instead I went with what I am more used (with slight modifications, e.g. no C-style casts) to prioritize consistency (although I used clang format). Overall I tryed not to overcomplicate things for no reason.
 - I've intentionaly avoided using std::string and iostream operations. I didn't have enough time to find a library with a proper implementation, so I resorted to using C API for string, std io and file io operations.
@@ -25,7 +26,7 @@
 User can enter any random letter instead of a numeric value in order to use a default parameter value.
 - Two commandline parameters can be optionally provided to the programm (in any order):
 	1. Custom path to the folder containing audio files. If not provided, application will use the default path relative to solution. Its going to try and load all the *.wav files in this folder.
-	2. --no-fadeout - this changes the behavior of how the playback is handled when the timeframe (defined by "walk speed") is less than the current file lenght.
+	2. --no-fadeout - this option changes the behavior of how the playback is handled when the timeframe (defined by "walk speed") is less than the current file lenght.
 - I've provided	both a .sln file and a cmake file just in case. The former is a prefered option. If generating solution with cmake you might need to manually specify the path to the folder containig audio files. When using provided .sln file, the folder should be found automatically.
 - Note that due to the way cmake generate solutions, in order for it to be compatitable with the provided .sln file out of the box, the 'Character Set' option is set to 'Use Multi-Byte Character Set'. 
 
@@ -37,7 +38,12 @@ User can enter any random letter instead of a numeric value in order to use a de
 	Didn't have time to vectorize most of the DSP computations. Although manual vectorization by itself would've not been that hard, I've decided aginst doing it for now for two main reasons: 
 			1. It would've been required to properly handle data aligment and padding, which I didn't have time to do.
 			2. I didn't have time to profile the application and going blind would've been pointless.
-
+* Unicode support for filenames and path:
+	Actually I had to remove to be compatitable with the cmake generated solution. I still have it version controlled.
+* Support for multiple samplerates, buffer sizes:
+	For now its hardcoded to 48 Khz, 256 frames
+* Support for multiple output channels configurations:
+	For now it only supports 2 channels stereo
 * Option to load parameters from a configuration file.
 * Ability to play sounds completly seamlesly - sample accurate:
 	My solution does not currently provide this option. To implement this it'll be required to almost completely rewrite all the playback code. It would be a different type of container then. But all the processing code should be reusable.
@@ -48,3 +54,5 @@ User can enter any random letter instead of a numeric value in order to use a de
 * Add more waveforms to the LFO.
 * Alternative interpolation method (e.g. cubic) for the audio pitch.
 * User parameters for distortion.
+
+- If you find any of the missing features or limitations crucial, please don't hesitate to contact me.

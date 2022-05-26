@@ -117,7 +117,7 @@ bool load_files(audio_file_container &audio_files, const char *folder_path)
                 audio_files.push_back(AudioFile<float>());
                 audio_files.back().load(path);
                 total_size +=
-                    audio_files.back().getNumSamplesPerChannel() * audio_files.back().getNumChannels() * sizeof(float);
+                    audio_files.back().getNumSamplesPerChannel() * audio_files.back().getNumChannels() * sizeof(float); // for fp32 wav format
                 if (total_size > MAX_DATA_SIZE) {
                     puts("Max data size exceeded, no more files are going to be loaded.");
                     break;
