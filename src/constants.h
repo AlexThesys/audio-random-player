@@ -1,6 +1,6 @@
 #pragma once
 
-#define SAMPLE_RATE (48000)
+#define SAMPLE_RATE 48000
 #define NUM_CHANNELS 2
 #define NUM_FILES 4
 #define FRAMES_PER_BUFFER 256
