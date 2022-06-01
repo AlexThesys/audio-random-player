@@ -1,3 +1,5 @@
+#include <windows.h>
+
 #include "audio_playback.h"
 #include "constants.h"
 #include "utils.h"
@@ -8,6 +10,9 @@ static librandom::simple random_gen;
 static dsp::filter lp_filter;
 static dsp::wavetable lfo_gen;
 
+extern volatile play_params *middle_buf;
+extern volatile LONG new_data;
+
 inline float semitones_to_pitch_scale(float semitones_dev)
 {
     const float semitones = random_gen.f(-semitones_dev, semitones_dev);
@@ -16,22 +21,22 @@ inline float semitones_to_pitch_scale(float semitones_dev)
 
 static void randomize_data(pa_data *data)
 {
+    if (InterlockedCompareExchange(&new_data, 0, 1))
+        data->front_buf = (play_params*)InterlockedExchange64((volatile LONG64*)&middle_buf, reinterpret_cast<LONG64>(data->front_buf));
     const int num_files = static_cast<int>(data->p_data.audio_file->size());
     uint32_t rnd_id = static_cast<uint32_t>(random_gen.i(num_files - 1));
     cache cache(data->p_data.cache_id);
     rnd_id = cache.check(rnd_id, static_cast<uint8_t>(num_files));
     data->p_data.cache_id = cache.value();
     data->p_data.file_id = static_cast<int>(rnd_id);
-    data->p_data.pitch = semitones_to_pitch_scale(data->p_params->pitch_deviation);
-    data->p_data.volume = random_gen.f(data->p_params->volume_lower_bound, MAX_VOLUME);
-    const float lpf_freq = random_gen.f(MAX_LPF_FREQ - data->p_params->lpf_freq_range, MAX_LPF_FREQ);
-    const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + data->p_params->lpf_q_range);
+    data->p_data.pitch = semitones_to_pitch_scale(data->front_buf->pitch_deviation);
+    data->p_data.volume = random_gen.f(data->front_buf->volume_lower_bound, MAX_VOLUME);
+    const float lpf_freq = random_gen.f(MAX_LPF_FREQ - data->front_buf->lpf_freq_range, MAX_LPF_FREQ);
+    const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + data->front_buf->lpf_q_range);
     lp_filter.setup(lpf_freq, lpf_q);
-    data->p_data.num_step_frames = data->p_params->num_step_frames;
-    data->p_data.use_lfo = data->p_params->use_lfo;
-    if (data->p_data.use_lfo)
-        lfo_gen.set_rate(data->p_params->lfo_freq, data->p_params->lfo_amount);
-    data->p_data.waveshaper_enabled = data->p_params->waveshaper_enabled;
+    data->p_data.num_step_frames = data->front_buf->num_step_frames;
+    if (data->front_buf->use_lfo)
+        lfo_gen.set_rate(data->front_buf->lfo_freq, data->front_buf->lfo_amount);
     data->p_data.frame_index[static_cast<size_t>(data->p_data.file_id)] = 0;
 }
 
@@ -41,7 +46,7 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
     const size_t file_id = static_cast<size_t>(data->p_data.file_id);
     const int frame_index = data->p_data.frame_index[file_id];
     const int frame_counter = data->p_data.frame_counter[file_id];
-    const bool waveshaper_enabled = data->p_data.waveshaper_enabled;
+    const bool waveshaper_enabled = data->front_buf->waveshaper_enabled;
     const AudioFile<float> &audio_file = (*data->p_data.audio_file)[file_id];
     const size_t stereo_file = static_cast<size_t>(audio_file.isStereo());
     const int total_samples = _min(audio_file.getNumSamplesPerChannel(), (int)data->p_data.num_step_frames);
@@ -57,7 +62,7 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
             static_cast<size_t>(out_samples), frames_per_buffer, static_cast<size_t>(audio_file.getNumChannels()),
             (total_samples < audio_file.getNumSamplesPerChannel())));
 
-        apply_volume(processing_buffer, volume, data->p_data.use_lfo, lfo_gen);
+        apply_volume(processing_buffer, volume, data->front_buf->use_lfo, lfo_gen);
 
         if (waveshaper_enabled)
             dsp::waveshaper::process(processing_buffer, dsp::waveshaper::default_params);

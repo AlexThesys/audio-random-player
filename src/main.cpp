@@ -1,8 +1,13 @@
 // audio_test.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+#include <windows.h>
+
 #include "user_input.h"
 #include <stdio.h>
+
+volatile  play_params *middle_buf;
+volatile LONG new_data;
 
 int main(int argc, char **argv)
 {
@@ -16,10 +21,12 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    play_params p_params[2];
+    play_params p_params[3];
     pa_data data(&audioFiles);
-    get_user_params(p_params, audioFiles, disable_fadeout);
-    data.p_params = p_params;
+    get_user_params(&p_params[1], audioFiles, disable_fadeout);
+    data.front_buf = &p_params[2];
+    middle_buf = &p_params[1];
+    new_data = 1;
 
     pa_player audio_player;
     if (audio_player.init_pa(&data) != paNoError)

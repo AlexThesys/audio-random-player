@@ -5,6 +5,9 @@
 #include "user_input.h"
 #include "utils.h"
 
+extern volatile play_params *middle_buf;
+extern volatile LONG new_data;
+
 static int calculate_step_time(int walk_speed, const audio_file_container audio_files, bool no_fadeout)
 {
     const float step_size = 0.762f; // for an average man
@@ -145,16 +148,16 @@ void process_cmdline_args(int argc, char **argv, const char **res, bool *nofadeo
 
 void run_user_loop(const audio_file_container &audio_files, pa_data &data, play_params *p_params, bool disable_fadeout)
 {
-    int selector = 0;
+    play_params *back_buf = &p_params[0];
     do {
         puts("\nEnter \'q\' to stop the playback or \'p\' to change parameters...");
         const char ch = static_cast<char>(getchar());
         if (ch == 'q' || ch == 'Q') {
             break;
-        } else if (ch == 'p' || ch == 'P') {
-            selector ^= 1;
-            get_user_params(&p_params[selector], audio_files, disable_fadeout);
-            data.p_params = &p_params[selector];
+        } else if (ch == 'p' || ch == 'P') {      
+            get_user_params(back_buf, audio_files, disable_fadeout);
+            back_buf = (play_params*)InterlockedExchange64((volatile LONG64*)&middle_buf, reinterpret_cast<LONG64>(back_buf));
+            new_data = 1;
         } else {
             while ((getchar()) != '\n'); // flush stdin
         }

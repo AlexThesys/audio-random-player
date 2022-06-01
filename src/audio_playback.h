@@ -18,13 +18,11 @@ struct play_data
     float pitch;
     float volume;
     int num_step_frames;
-    bool use_lfo;
-    bool waveshaper_enabled;
+
     // padding 2 bytes
 
     play_data()
-        : audio_file(nullptr), file_id(0), cache_id(0), pitch(1.0f), volume(1.0f), num_step_frames(0), use_lfo(false),
-          waveshaper_enabled(false)
+        : audio_file(nullptr), file_id(0), cache_id(0), pitch(1.0f), volume(1.0f), num_step_frames(0)
     {
     }
 
@@ -36,8 +34,6 @@ struct play_data
         pitch = 1.0f;
         volume = 1.0f;
         num_step_frames = 0;
-        waveshaper_enabled = false;
-        use_lfo = false;
         frame_index.resize(audio_file->size(), 0);
         frame_counter.resize(audio_file->size(), 0);
     }
@@ -73,9 +69,9 @@ struct play_params
 struct pa_data
 {
     play_data p_data;
-    play_params *volatile p_params;
+    play_params *front_buf;
 
-    pa_data(const audio_file_container *af) : p_params(nullptr)
+    pa_data(const audio_file_container *af) : front_buf(nullptr)
     {
         p_data.init(af);
     }
