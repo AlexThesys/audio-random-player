@@ -18,8 +18,7 @@ struct play_data
     float pitch;
     float volume;
     int num_step_frames;
-
-    // padding 2 bytes
+    // 4 bytes padding
 
     play_data()
         : audio_file(nullptr), file_id(0), cache_id(0), pitch(1.0f), volume(1.0f), num_step_frames(0)
