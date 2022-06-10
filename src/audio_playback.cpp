@@ -45,7 +45,6 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
     const float volume = data->p_data.volume;
     const size_t file_id = static_cast<size_t>(data->p_data.file_id);
     const int frame_index = data->p_data.frame_index[file_id];
-    const int frame_counter = data->p_data.frame_counter[file_id];
     const bool waveshaper_enabled = data->front_buf->waveshaper_enabled;
     const AudioFile<float> &audio_file = (*data->p_data.audio_file)[file_id];
     const size_t stereo_file = static_cast<size_t>(audio_file.isStereo());
@@ -75,19 +74,17 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
                 *out_buffer++ = processing_buffer[stereo_file][i]; /* right */
         }
         data->p_data.frame_index[file_id] += frames_read;
-        data->p_data.frame_counter[file_id] += static_cast<int>(frames_per_buffer);
     } else {
         for (i = 0; i < frames_per_buffer; i++) {
-            *out_buffer++ = 0; /* left */
+            *out_buffer++ = 0.0f; /* left */
             if (NUM_CHANNELS == 2)
-                *out_buffer++ = 0; /* right */
-        }
-        if (frame_counter < data->p_data.num_step_frames) {
-            data->p_data.frame_counter[file_id] += static_cast<int>(frames_per_buffer);
-        } else {
-            data->p_data.frame_counter[file_id] = 0;
+                *out_buffer++ = 0.0f; /* right */
         }
     }
+    const int frame_counter = data->p_data.frame_counter[file_id] + static_cast<int>(frames_per_buffer);
+    data->p_data.frame_counter[file_id] = (frame_counter < data->p_data.num_step_frames)
+                                              ? data->p_data.frame_counter[file_id] = frame_counter
+                                              : data->p_data.frame_counter[file_id] = 0;
 }
 
 int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsigned long frames_per_buffer,
