@@ -83,14 +83,16 @@ struct pa_data
 
     void resize_processing_buffer(size_t num_frames)
     {
+        assert((num_frames & (F_IN_VEC - 1)) == 0x0);
+        num_frames /= F_IN_VEC;
         p_data.processing_buffer[0].resize(num_frames);
         p_data.processing_buffer[1].resize(num_frames);
     }
     void fill_buffer_with_silence()
     {
         const size_t size = p_data.processing_buffer[0].size();
-        memset(p_data.processing_buffer[0].data(), 0, sizeof(float) * size);
-        memset(p_data.processing_buffer[1].data(), 0, sizeof(float) * size);
+        memset(p_data.processing_buffer[0].data(), 0, sizeof(__m128) * size);
+        memset(p_data.processing_buffer[1].data(), 0, sizeof(__m128) * size);
     }
 };
 

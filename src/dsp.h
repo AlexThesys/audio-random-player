@@ -52,7 +52,7 @@ struct vec
 {
     union {
         __m128 m;
-        alignas(16) float data[4];
+        alignas(16) float data[F_IN_VEC];
     };
     CalcT _dot(vec other)
     {
@@ -164,9 +164,10 @@ class filter
     }
     void process(buffer_container &buffer)
     {
+        const size_t b_size = buffer[0].size() * F_IN_VEC;
         for (size_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
-            float *dest = buffer[ch].data();
-            _lpf.process(buffer[ch].size(), dest, (int)ch);
+            float *dest = (float*)buffer[ch].data();
+            _lpf.process(b_size, dest, (int)ch);
         }
     }
 };

@@ -42,6 +42,7 @@ static void randomize_data(pa_data *data)
 
 static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_buffer)
 {
+    assert((frames_per_buffer & 0x3) == 0x0);
     const float volume = data->p_data.volume;
     const size_t file_id = static_cast<size_t>(data->p_data.file_id);
     const int frame_index = data->p_data.frame_index[file_id];
@@ -68,18 +69,21 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
 
         lp_filter.process(processing_buffer);
 
-        for (i = 0; i < frames_per_buffer; i++) {
-            *out_buffer++ = processing_buffer[0][i]; /* left */
-            if (NUM_CHANNELS == 2)
-                *out_buffer++ = processing_buffer[stereo_file][i]; /* right */
+        i = 0;
+        for (int sz = frames_per_buffer / F_IN_VEC; i < sz; i++) {
+            _mm_store_ps(out_buffer, processing_buffer[0][i]); /* left */
+            out_buffer += F_IN_VEC;
+            if (NUM_CHANNELS == 2) {
+                _mm_store_ps(out_buffer, processing_buffer[stereo_file][i]); /* right */
+                out_buffer += F_IN_VEC;
+            }
         }
         data->p_data.frame_index[file_id] += frames_read;
     } else {
-        for (i = 0; i < frames_per_buffer; i++) {
-            *out_buffer++ = 0.0f; /* left */
-            if (NUM_CHANNELS == 2)
-                *out_buffer++ = 0.0f; /* right */
-        }
+        memset(out_buffer, 0, frames_per_buffer * sizeof(float)); /* left */
+        out_buffer += frames_per_buffer;
+        if (NUM_CHANNELS == 2)
+            memset(out_buffer, 0, frames_per_buffer * sizeof(float)); /* right */
     }
     const int frame_counter = data->p_data.frame_counter[file_id] + static_cast<int>(frames_per_buffer);
     data->p_data.frame_counter[file_id] = (frame_counter < data->p_data.num_step_frames)
@@ -112,6 +116,7 @@ int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsig
 
 int pa_player::init_pa(pa_data *data)
 {
+    static_assert((FRAMES_PER_BUFFER & (F_IN_VEC - 1)) == 0x0, "Frame buffer size should be divisible by 4.");
     data->resize_processing_buffer(FRAMES_PER_BUFFER);
 
     PaError err = Pa_Initialize();

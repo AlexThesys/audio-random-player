@@ -3,8 +3,9 @@
 #define SAMPLE_RATE 48000
 #define NUM_CHANNELS 2
 #define NUM_FILES 4
-#define FRAMES_PER_BUFFER 256
+#define FRAMES_PER_BUFFER 0x100
 #define MAX_VOLUME 1.0f
+#define F_IN_VEC 4 // sizeof(__m128) / sizeof(float)
 
 #define PI 3.14159265359f
 #define PI_DIV_4 0.78539816339f

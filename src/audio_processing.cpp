@@ -1,6 +1,6 @@
 #include "audio_processing.h"
 
-inline void apply_fadeout(std::vector<float> &dest, size_t out_samples)
+inline void apply_fadeout(float *dest, size_t out_samples)
 {
     constexpr int fade_prefered_lenght = 40;
     const int count = static_cast<int>(out_samples);
@@ -13,10 +13,13 @@ inline void apply_fadeout(std::vector<float> &dest, size_t out_samples)
     }
 }
 
-size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &dest, size_t file_offset, size_t in_samples,
+size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &destination, size_t file_offset, size_t in_samples,
              size_t out_samples, size_t frames_per_buffer, size_t num_ch, bool fadeout)
 {
     size_t i;
+    float *dest[2];
+    dest[0] = (float *)destination[0].data();
+    dest[1] = (float *)destination[1].data();
     size_t frames_read = in_samples;
     if (in_samples == out_samples) {
         // common case - just copy and attenuate
@@ -68,15 +71,21 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
 void apply_volume(buffer_container &buffer, float volume, bool use_lfo, dsp::wavetable &lfo_gen)
 {
     if (!use_lfo) {
-        for (std::vector<float> &b : buffer) {
-            for (float &f : b) {
-                f *= volume;
+        const __m128 vol = _mm_set1_ps(volume);
+        for (std::vector<__m128> &b : buffer) {
+            for (__m128 &m : b) {
+                m = _mm_mul_ps(m, vol);
             }
         }
     } else {
         for (size_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
-            for (float &f : buffer[ch]) {
-                f *= lfo_gen.update(ch);
+            for (__m128& m : buffer[ch]) {
+                alignas(16) float lfo[F_IN_VEC];
+                lfo[0] = lfo_gen.update(ch);
+                lfo[1] = lfo_gen.update(ch);
+                lfo[2] = lfo_gen.update(ch);
+                lfo[3] = lfo_gen.update(ch);
+                m = _mm_mul_ps(m, *(__m128*)lfo);
             }
         }
     }
