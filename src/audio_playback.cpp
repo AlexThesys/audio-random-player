@@ -68,17 +68,21 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
         lp_filter.process(processing_buffer, num_file_channels);
 
         const size_t stereo_file = static_cast<size_t>(audio_file.isStereo());
-        for (size_t i = 0, sz = frames_per_buffer / FP_IN_VEC; i < sz; i++) {
-            _mm_storeu_ps(out_buffer, processing_buffer[0][i]); /* left */
-            out_buffer += FP_IN_VEC;
-            _mm_storeu_ps(out_buffer, processing_buffer[stereo_file][i]); /* right */
-            out_buffer += FP_IN_VEC;
+        for (size_t i = 0; i < frames_per_buffer; i+=4, out_buffer+=FP_IN_VEC*2) {
+            // PA output buffer uses interleaved frame format
+            out_buffer[0] = ((float*)processing_buffer[0].data())[i + 0];
+            out_buffer[1] = ((float*)processing_buffer[stereo_file].data())[i + 0];
+            out_buffer[2] = ((float*)processing_buffer[0].data())[i + 1];
+            out_buffer[3] = ((float*)processing_buffer[stereo_file].data())[i + 1];
+            out_buffer[4] = ((float*)processing_buffer[0].data())[i + 2];
+            out_buffer[5] = ((float*)processing_buffer[stereo_file].data())[i + 2];
+            out_buffer[6] = ((float*)processing_buffer[0].data())[i + 3];
+            out_buffer[7] = ((float*)processing_buffer[stereo_file].data())[i + 3];
         }
+
         data->p_data.frame_index[file_id] += frames_read;
     } else {
-        memset(out_buffer, 0, frames_per_buffer * sizeof(float)); /* left */
-        out_buffer += frames_per_buffer;
-        memset(out_buffer, 0, frames_per_buffer * sizeof(float)); /* right */
+        memset(out_buffer, 0, frames_per_buffer * sizeof(float) * NUM_CHANNELS);    /* left & right */
     }
     const int frame_counter = data->p_data.frame_counter[file_id] + static_cast<int>(frames_per_buffer);
     data->p_data.frame_counter[file_id] = (frame_counter < data->p_data.num_step_frames)
