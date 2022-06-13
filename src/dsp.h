@@ -154,7 +154,7 @@ struct low_pass : public filter_base<num_channels>
 
 class filter
 {
-    biquad::low_pass<2> _lpf;
+    biquad::low_pass<NUM_CHANNELS> _lpf;
 
   public:
     void setup(float f, float r)

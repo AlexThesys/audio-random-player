@@ -16,7 +16,7 @@ inline void apply_fadeout(float *dest, size_t out_samples)
 size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &destination, size_t file_offset, size_t in_samples,
              size_t out_samples, size_t frames_per_buffer, size_t num_ch, bool fadeout)
 {
-    float *dest[2];
+    float *dest[NUM_CHANNELS];
     dest[0] = (float *)destination[0].data();
     dest[1] = (float *)destination[1].data();
     size_t frames_read = in_samples;

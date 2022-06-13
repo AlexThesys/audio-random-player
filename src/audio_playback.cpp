@@ -73,17 +73,14 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
         for (int sz = frames_per_buffer / F_IN_VEC; i < sz; i++) {
             _mm_store_ps(out_buffer, processing_buffer[0][i]); /* left */
             out_buffer += F_IN_VEC;
-            if (NUM_CHANNELS == 2) {
-                _mm_store_ps(out_buffer, processing_buffer[stereo_file][i]); /* right */
-                out_buffer += F_IN_VEC;
-            }
+            _mm_store_ps(out_buffer, processing_buffer[stereo_file][i]); /* right */
+            out_buffer += F_IN_VEC;
         }
         data->p_data.frame_index[file_id] += frames_read;
     } else {
         memset(out_buffer, 0, frames_per_buffer * sizeof(float)); /* left */
         out_buffer += frames_per_buffer;
-        if (NUM_CHANNELS == 2)
-            memset(out_buffer, 0, frames_per_buffer * sizeof(float)); /* right */
+        memset(out_buffer, 0, frames_per_buffer * sizeof(float)); /* right */
     }
     const int frame_counter = data->p_data.frame_counter[file_id] + static_cast<int>(frames_per_buffer);
     data->p_data.frame_counter[file_id] = (frame_counter < data->p_data.num_step_frames)
@@ -128,7 +125,7 @@ int pa_player::init_pa(pa_data *data)
         fprintf(stderr, "Error: No default output device.\n");
         return -1;
     }
-    outputParameters.channelCount = 2; /* stereo output */
+    outputParameters.channelCount = NUM_CHANNELS; /* stereo output */
     outputParameters.sampleFormat = PA_SAMPLE_TYPE;
     outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
