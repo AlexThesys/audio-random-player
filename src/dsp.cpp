@@ -27,7 +27,7 @@ namespace waveshaper
 //
 //void process(buffer_container &buffer, size_t num_channels, const params &p)
 //{
-//    const int b_size = (int)buffer[0].size() * F_IN_VEC;
+//    const int b_size = (int)buffer[0].size() * FP_IN_VEC;
 //    for (size_t ch = 0; ch < num_channels; ch++) {
 //        float* buf = (float*)buffer[ch].data();
 //        for (int i = 0; i < b_size; i++) {

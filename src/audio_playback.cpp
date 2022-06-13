@@ -67,11 +67,11 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
         lp_filter.process(processing_buffer, num_file_channels);
 
         const size_t stereo_file = static_cast<size_t>(audio_file.isStereo());
-        for (size_t i = 0, sz = frames_per_buffer / F_IN_VEC; i < sz; i++) {
+        for (size_t i = 0, sz = frames_per_buffer / FP_IN_VEC; i < sz; i++) {
             _mm_storeu_ps(out_buffer, processing_buffer[0][i]); /* left */
-            out_buffer += F_IN_VEC;
+            out_buffer += FP_IN_VEC;
             _mm_storeu_ps(out_buffer, processing_buffer[stereo_file][i]); /* right */
-            out_buffer += F_IN_VEC;
+            out_buffer += FP_IN_VEC;
         }
         data->p_data.frame_index[file_id] += frames_read;
     } else {
@@ -110,7 +110,7 @@ int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsig
 
 int pa_player::init_pa(pa_data *data)
 {
-    static_assert((FRAMES_PER_BUFFER & (F_IN_VEC - 1)) == 0x0, "Frame buffer size should be divisible by 4.");
+    static_assert((FRAMES_PER_BUFFER & (FP_IN_VEC - 1)) == 0x0, "Frame buffer size should be divisible by 4.");
     data->resize_processing_buffer(FRAMES_PER_BUFFER);
 
     PaError err = Pa_Initialize();

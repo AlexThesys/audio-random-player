@@ -83,8 +83,8 @@ struct pa_data
 
     void resize_processing_buffer(size_t num_frames)
     {
-        assert((num_frames & (F_IN_VEC - 1)) == 0x0);
-        num_frames /= F_IN_VEC;
+        assert((num_frames & (FP_IN_VEC - 1)) == 0x0);
+        num_frames /= FP_IN_VEC;
         p_data.processing_buffer[0].resize(num_frames);
         p_data.processing_buffer[1].resize(num_frames);
     }

@@ -71,7 +71,7 @@ void apply_volume(buffer_container &buffer, size_t num_channels, float volume, b
     } else {
         for (size_t ch = 0; ch < num_channels; ch++) {
             for (__m128& m : buffer[ch]) {
-                alignas(16) float lfo[F_IN_VEC];
+                alignas(16) float lfo[FP_IN_VEC];
                 lfo[0] = lfo_gen.update(ch);
                 lfo[1] = lfo_gen.update(ch);
                 lfo[2] = lfo_gen.update(ch);
