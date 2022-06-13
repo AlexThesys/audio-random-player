@@ -13,7 +13,7 @@ static dsp::wavetable lfo_gen;
 extern volatile play_params *middle_buf;
 extern volatile LONG new_data;
 
-inline float semitones_to_pitch_scale(float semitones_dev)
+static inline float semitones_to_pitch_scale(float semitones_dev)
 {
     const float semitones = random_gen.f(-semitones_dev, semitones_dev);
     return powf(2.0f, semitones / 12.0f);
@@ -125,6 +125,7 @@ int pa_player::init_pa(pa_data *data)
         fprintf(stderr, "Error: No default output device.\n");
         return -1;
     }
+    static_assert(NUM_CHANNELS == 2, "Only stereo configuration supported for now.");
     outputParameters.channelCount = NUM_CHANNELS; /* stereo output */
     outputParameters.sampleFormat = PA_SAMPLE_TYPE;
     outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
@@ -144,8 +145,26 @@ int pa_player::init_pa(pa_data *data)
                         (void *)data);                      /*This is a pointer that will be passed to
                                                                  your callback*/
     verify_pa_no_error_verbose(err);
+    if (err != paNoError) {
+        err = Pa_Terminate();
+        verify_pa_no_error_verbose(err);
+    }
 
-    err = Pa_StartStream(_stream);
+    const PaStreamInfo *info = Pa_GetStreamInfo(_stream);
+    if (info && (static_cast<int>(info->sampleRate) == SAMPLE_RATE)) {
+        err = Pa_StartStream(_stream);
+        verify_pa_no_error_verbose(err);
+    } else {
+        puts("Default sample rate unsupported - check your audio device!");
+        err = -1;
+    }
+
+    if (err != paNoError) {
+        err = Pa_CloseStream(_stream);
+        verify_pa_no_error_verbose(err);
+        err = Pa_Terminate();
+        verify_pa_no_error_verbose(err);
+    }
 
     return paNoError;
 }
