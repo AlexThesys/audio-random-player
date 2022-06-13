@@ -59,17 +59,17 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
     return frames_read;
 }
 
-void apply_volume(buffer_container &buffer, float volume, bool use_lfo, dsp::wavetable &lfo_gen)
+void apply_volume(buffer_container &buffer, size_t num_channels, float volume, bool use_lfo, dsp::wavetable &lfo_gen)
 {
     if (!use_lfo) {
         const __m128 vol = _mm_set1_ps(volume);
-        for (std::vector<__m128> &b : buffer) {
-            for (__m128 &m : b) {
+        for (size_t ch = 0; ch < num_channels; ch++) {
+            for (__m128 &m : buffer[ch]) {
                 m = _mm_mul_ps(m, vol);
             }
         }
     } else {
-        for (size_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
+        for (size_t ch = 0; ch < num_channels; ch++) {
             for (__m128& m : buffer[ch]) {
                 alignas(16) float lfo[F_IN_VEC];
                 lfo[0] = lfo_gen.update(ch);

@@ -25,11 +25,11 @@ namespace waveshaper
 //    // return M_PI_4 * x - x * (abs_x - 1.0f) * (0.2447f + 0.0663f * abs_x);
 //}
 //
-//void process(buffer_container &buffer, const params &p)
+//void process(buffer_container &buffer, size_t num_channels, const params &p)
 //{
 //    const int b_size = (int)buffer[0].size() * F_IN_VEC;
-//    for (std::vector<__m128> &b : buffer) {
-//        float* buf = (float*)b.data();
+//    for (size_t ch = 0; ch < num_channels; ch++) {
+//        float* buf = (float*)buffer[ch].data();
 //        for (int i = 0; i < b_size; i++) {
 //            float sample = buf[i];
 //            for (uint32_t j = 0; j < p.num_stages; j++) {
@@ -57,7 +57,7 @@ namespace waveshaper
 	temp	= _mm_mul_ps(temp, abs_x);\
 	x		= _mm_sub_ps(x, temp);
 
-void process(buffer_container &buffer, const params &p)
+void process(buffer_container &buffer, size_t num_channels, const params &p)
 {
     const __m128i not_sign_bit = _mm_set1_epi32(0x7FFFFFFF);
     const __m128 c_pos = _mm_set1_ps(p.coef_pos);
@@ -72,9 +72,9 @@ void process(buffer_container &buffer, const params &p)
     // process
     const int b_size  = (int)buffer[0].size();
     assert((b_size & 0x3) == 0x0);
-    for (std::vector<__m128> &buf : buffer) {
+    for (size_t ch = 0; ch < num_channels; ch++) {
         for (int i = 0; i < b_size; i++) {
-            __m128 sample = buf[i];
+            __m128 sample = buffer[ch][i];
             for (int j = 0; j < p.num_stages; j++) {
                 __m128i mask = _mm_srai_epi32(*(__m128i *)&sample, 0x1f);
                 __m128 coef = _mm_and_ps(*(__m128 *)&mask, c_neg);
@@ -92,7 +92,7 @@ void process(buffer_container &buffer, const params &p)
                 sample = _mm_xor_ps(sample, *(__m128 *)&inv);
             }
             sample = _mm_mul_ps(sample, gain);
-            buf[i] = sample;
+            buffer[ch][i] = sample;
         }
     }
 }

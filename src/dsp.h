@@ -20,7 +20,7 @@ struct params
     float gain;
 };
 
-void process(buffer_container &buffer, const params &p);
+void process(buffer_container &buffer, size_t num_channels, const params &p);
 
 static const params default_params = {0.2f, 1.8f, 9, 1, 0.12f};
 } // namespace waveshaper
@@ -162,10 +162,10 @@ class filter
         _lpf.clear();
         _lpf.setup(f / (float)SAMPLE_RATE, r);
     }
-    void process(buffer_container &buffer)
+    void process(buffer_container &buffer, size_t num_channels)
     {
         const size_t b_size = buffer[0].size() * F_IN_VEC;
-        for (size_t ch = 0, num_ch = buffer.size(); ch < num_ch; ch++) {
+        for (size_t ch = 0; ch < num_channels; ch++) {
             float *dest = (float*)buffer[ch].data();
             _lpf.process(b_size, dest, (int)ch);
         }

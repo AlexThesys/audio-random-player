@@ -43,15 +43,12 @@ static void randomize_data(pa_data *data)
 static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_buffer)
 {
     assert((frames_per_buffer & 0x3) == 0x0);
-    const float volume = data->p_data.volume;
     const size_t file_id = static_cast<size_t>(data->p_data.file_id);
     const int frame_index = data->p_data.frame_index[file_id];
-    const bool waveshaper_enabled = data->front_buf->waveshaper_enabled;
     const AudioFile<float> &audio_file = (*data->p_data.audio_file)[file_id];
-    const size_t stereo_file = static_cast<size_t>(audio_file.isStereo());
     const int total_samples = _min(audio_file.getNumSamplesPerChannel(), (int)data->p_data.num_step_frames);
-    size_t i;
     const int audio_frames_left = total_samples - frame_index;
+    const size_t num_file_channels = static_cast<size_t>(audio_file.getNumChannels());
     if (audio_frames_left > 0) {
         const int out_samples = _min(audio_frames_left, static_cast<int>(frames_per_buffer));
         const int in_samples = static_cast<int>(static_cast<float>(out_samples) * data->p_data.pitch);
@@ -59,21 +56,21 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
 
         const int frames_read = static_cast<int>(resample(
             audio_file.samples, processing_buffer, static_cast<size_t>(frame_index), static_cast<size_t>(in_samples),
-            static_cast<size_t>(out_samples), frames_per_buffer, static_cast<size_t>(audio_file.getNumChannels()),
+            static_cast<size_t>(out_samples), frames_per_buffer, num_file_channels,
             (total_samples < audio_file.getNumSamplesPerChannel())));
 
-        apply_volume(processing_buffer, volume, data->front_buf->use_lfo, lfo_gen);
+        apply_volume(processing_buffer, num_file_channels, data->p_data.volume, data->front_buf->use_lfo, lfo_gen);
 
-        if (waveshaper_enabled)
-            dsp::waveshaper::process(processing_buffer, dsp::waveshaper::default_params);
+        if (data->front_buf->waveshaper_enabled)
+            dsp::waveshaper::process(processing_buffer, num_file_channels, dsp::waveshaper::default_params);
 
-        lp_filter.process(processing_buffer);
+        lp_filter.process(processing_buffer, num_file_channels);
 
-        i = 0;
-        for (int sz = frames_per_buffer / F_IN_VEC; i < sz; i++) {
-            _mm_store_ps(out_buffer, processing_buffer[0][i]); /* left */
+        const size_t stereo_file = static_cast<size_t>(audio_file.isStereo());
+        for (size_t i = 0, sz = frames_per_buffer / F_IN_VEC; i < sz; i++) {
+            _mm_storeu_ps(out_buffer, processing_buffer[0][i]); /* left */
             out_buffer += F_IN_VEC;
-            _mm_store_ps(out_buffer, processing_buffer[stereo_file][i]); /* right */
+            _mm_storeu_ps(out_buffer, processing_buffer[stereo_file][i]); /* right */
             out_buffer += F_IN_VEC;
         }
         data->p_data.frame_index[file_id] += frames_read;
