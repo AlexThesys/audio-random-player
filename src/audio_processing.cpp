@@ -16,7 +16,6 @@ inline void apply_fadeout(float *dest, size_t out_samples)
 size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &destination, size_t file_offset, size_t in_samples,
              size_t out_samples, size_t frames_per_buffer, size_t num_ch, bool fadeout)
 {
-    size_t i;
     float *dest[2];
     dest[0] = (float *)destination[0].data();
     dest[1] = (float *)destination[1].data();
@@ -24,25 +23,19 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
     if (in_samples == out_samples) {
         // common case - just copy and attenuate
         for (size_t ch = 0; ch < num_ch; ch++) {
-            i = 0;
-            for (size_t j = file_offset; i < out_samples; i++, j++) {
-                dest[ch][i] = source[ch][j];
-            }
+            memcpy(dest[ch], (const void *)(source[ch].data() + file_offset), sizeof(float) * out_samples);
             // if it's the last one - pad with zeros
             if (out_samples < frames_per_buffer) {
                 if (fadeout)
                     apply_fadeout(dest[ch], out_samples);
-                for (; i < frames_per_buffer; i++) {
-                    dest[ch][i] = 0.0f;
-                }
+                memset(dest[ch], 0, sizeof(float) * (frames_per_buffer - out_samples));
             }
         }
     } else {
         const float d = float(in_samples) / float(out_samples);
         for (size_t ch = 0; ch < num_ch; ch++) {
             dest[ch][0] = source[ch][file_offset];
-            i = 1;
-            for (size_t j = file_offset + 1, sz = source[ch].size(); i < out_samples; i++) {
+            for (size_t i = 1, j = file_offset + 1, sz = source[ch].size(); i < out_samples; i++) {
                 const float x = float(i) * d;
                 const int y = int(x);
                 const float z = x - float(y);
@@ -57,9 +50,7 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
             if (out_samples < frames_per_buffer) {
                 if (fadeout)
                     apply_fadeout(dest[ch], out_samples);
-                for (; i < frames_per_buffer; i++) {
-                    dest[ch][i] = 0.0f;
-                }
+                memset(dest[ch], 0, sizeof(float) * (frames_per_buffer - out_samples));
                 if ((out_samples < frames_per_buffer) && (d < 1.0f))
                     frames_read = out_samples;
             }
