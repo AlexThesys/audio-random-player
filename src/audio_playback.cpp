@@ -8,7 +8,8 @@
 
 static librandom::simple random_gen;
 static dsp::filter lp_filter;
-static dsp::wavetable lfo_gen;
+static const dsp::modulation::wavetable w_table;
+static dsp::modulation::lfo lfo_gen{&w_table};
 
 extern volatile play_params *middle_buf;
 extern volatile LONG new_data;

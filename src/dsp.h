@@ -172,40 +172,54 @@ class filter
     }
 };
 
-class wavetable
-{
-    float _buffer[LFO_BUFFER_SIZE];
-    float _read_idx[NUM_CHANNELS];
-    float _inc;
-    float _amount;
-
-  public:
-    wavetable() : _inc(0.0f), _amount(0.0f)
-    {
-        for (int i = 0; i < LFO_BUFFER_SIZE; i++) {
-            _buffer[i] =
-                (1.0f - sinf((static_cast<float>(i) / static_cast<float>(LFO_BUFFER_SIZE)) * 2.0f * PI)) * 0.5f;
+namespace modulation {
+    class wavetable {
+        float _buffer[LFO_BUFFER_SIZE];
+    public:
+        wavetable()
+        {
+            for (int i = 0; i < LFO_BUFFER_SIZE; i++) {
+                _buffer[i] =
+                    (1.0f - sinf((static_cast<float>(i) / static_cast<float>(LFO_BUFFER_SIZE)) * 2.0f * PI)) * 0.5f;
+            }
         }
-        memset(_read_idx, 0, sizeof(_read_idx));
-    }
-    void set_rate(float freq, float amount)
+        const float *buffer() const
+        {
+            return _buffer;
+        }
+    };
+
+    class lfo
     {
-        memset(_read_idx, 0, sizeof(_read_idx));
-        _inc = static_cast<float>(LFO_BUFFER_SIZE) * freq / static_cast<float>(SAMPLE_RATE);
-        _amount = amount;
-    }
-    float update(size_t ch)
-    {
-        int r_idx = static_cast<int>(_read_idx[ch]);
-        float frac = _read_idx[ch] - static_cast<float>(r_idx);
-        const int r_idx_next = (r_idx + 1) & (LFO_BUFFER_SIZE - 1);
-        const float res = _buffer[r_idx] * (1.0f - frac) + _buffer[r_idx_next] * frac;
-        _read_idx[ch] += _inc;
-        r_idx = static_cast<int>(_read_idx[ch]);
-        frac = _read_idx[ch] - (float)r_idx;
-        r_idx &= (LFO_BUFFER_SIZE - 1);
-        _read_idx[ch] = static_cast<float>(r_idx) + frac;
-        return 1.0f - (res * _amount);
-    }
-};
+        const wavetable *_wt;
+        float _read_idx[NUM_CHANNELS];
+        float _inc;
+        float _amount;
+
+    public:
+        lfo(const wavetable* wt) : _wt(wt),  _inc(0.0f), _amount(0.0f)
+        {
+            memset(_read_idx, 0, sizeof(_read_idx));
+        }
+        void set_rate(float freq, float amount)
+        {
+            memset(_read_idx, 0, sizeof(_read_idx));
+            _inc = static_cast<float>(LFO_BUFFER_SIZE) * freq / static_cast<float>(SAMPLE_RATE);
+            _amount = amount;
+        }
+        float update(size_t ch)
+        {
+            int r_idx = static_cast<int>(_read_idx[ch]);
+            float frac = _read_idx[ch] - static_cast<float>(r_idx);
+            const int r_idx_next = (r_idx + 1) & (LFO_BUFFER_SIZE - 1);
+            const float res = _wt->buffer()[r_idx] * (1.0f - frac) + _wt->buffer()[r_idx_next] * frac;
+            _read_idx[ch] += _inc;
+            r_idx = static_cast<int>(_read_idx[ch]);
+            frac = _read_idx[ch] - (float)r_idx;
+            r_idx &= (LFO_BUFFER_SIZE - 1);
+            _read_idx[ch] = static_cast<float>(r_idx) + frac;
+            return 1.0f - (res * _amount);
+        }
+    };
+}
 } // namespace dsp
