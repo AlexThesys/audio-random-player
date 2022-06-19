@@ -44,43 +44,42 @@ void get_user_params(play_params *data, const audio_file_container &audioFiles, 
 {
     puts("Please provide the playback parameters in decimal integer format!");
     puts("Enter any letter to skip the current parameter and use default.");
+    int value;
     printf("\nEnter the walk speed in kph [1...12]:\t");
-    const int walk_speed = clamp_input(get_input(DEFAULT_WALK_SPEED), MIN_WALK_SPEED, MAX_WALK_SPEED);
-    printf("%d\n", walk_speed);
-    const int step_num_frames = calculate_step_time(walk_speed, audioFiles, no_fadeout);
+    value = clamp_input(get_input(DEFAULT_WALK_SPEED), MIN_WALK_SPEED, MAX_WALK_SPEED);
+    printf("%d\n", value);
+    const int step_num_frames = calculate_step_time(value, audioFiles, no_fadeout);
     printf("\nEnter the pitch deviation in semitones [0...12]:\t");
-    const int pitch_dev = clamp_input(get_input(DEFAULT_PITCH_DEVIATION), MIN_PITCH_DEVIATION, MAX_PITCH_DEVIATION);
-    printf("%d\n", pitch_dev);
-    const float pitch_deviation = static_cast<float>(pitch_dev);
+    value = clamp_input(get_input(DEFAULT_PITCH_DEVIATION), MIN_PITCH_DEVIATION, MAX_PITCH_DEVIATION);
+    printf("%d\n", value);
+    const float pitch_deviation = static_cast<float>(value);
     printf("\nEnter the volume deviation in dB [0...90]:\t");
-    const int volume_lb =
-        clamp_input(get_input(DEFAULT_VOLUME_LOWER_BOUND), MIN_VOLUME_LOWER_BOUND, MAX_VOLUME_LOWER_BOUND);
-    printf("%d\n", volume_lb);
-    const float volume_lower_bound = calculate_volume_lower_bound(static_cast<float>(volume_lb));
+    value = clamp_input(get_input(DEFAULT_VOLUME_LOWER_BOUND), MIN_VOLUME_LOWER_BOUND, MAX_VOLUME_LOWER_BOUND);
+    printf("%d\n", value);
+    const float volume_lower_bound = calculate_volume_lower_bound(static_cast<float>(value));
     printf("\nEnter the LPF frequency deviation in KHZ [0...19]:\t");
-    const int lpf_f =
-        clamp_input(get_input(DEFAULT_LPF_FREQ_DEVIATION), MIN_LPF_FREQ_DEVIATION, MAX_LPF_FREQ_DEVIATION);
-    printf("%d\n", lpf_f);
-    const float lpf_freq = static_cast<float>(lpf_f) * 1000.0f;
+    value = clamp_input(get_input(DEFAULT_LPF_FREQ_DEVIATION), MIN_LPF_FREQ_DEVIATION, MAX_LPF_FREQ_DEVIATION);
+    printf("%d\n", value);
+    const float lpf_freq = static_cast<float>(value) * 1000.0f;
     printf("\nEnter the LPF Q deviation [0...8]:\t");
-    const int lpf_q_i = clamp_input(get_input(DEFAULT_LPF_Q_DEVIATION), MIN_LPF_Q_DEVIATION, MAX_LPF_Q_DEVIATION);
-    printf("%d\n", lpf_q_i);
-    const float lpf_q = static_cast<float>(lpf_q_i);
+    value = clamp_input(get_input(DEFAULT_LPF_Q_DEVIATION), MIN_LPF_Q_DEVIATION, MAX_LPF_Q_DEVIATION);
+    printf("%d\n", value);
+    const float lpf_q = static_cast<float>(value);
 
     puts("\nEnter non-zero value to use LFO for volume modulation.");
     printf("Enter LFO modulation frequency in Hz [1...10]:\t");
-    int lfo_f = get_input(DEFAULT_LFO_FREQ);
-    const bool use_lfo = !!lfo_f;
+    value = get_input(DEFAULT_LFO_FREQ);
+    const bool use_lfo = !!value;
     float lfo_freq = 0.0f;
     float lfo_amount = 0.0f;
     if (use_lfo) {
-        lfo_f = clamp_input(lfo_f, MIN_LFO_FREQ, MAX_LFO_FREQ);
-        printf("%d\n", lfo_f);
-        lfo_freq = static_cast<float>(lfo_f);
+        value = clamp_input(value, MIN_LFO_FREQ, MAX_LFO_FREQ);
+        printf("%d\n", value);
+        lfo_freq = static_cast<float>(value);
         printf("\nEnter LFO modulation amount [0...100]:\t");
-        const int lfo_a = clamp_input(get_input(DEFAULT_LFO_AMOUNT), MIN_LFO_AMOUNT, MAX_LFO_AMOUNT);
-        printf("%d\n", lfo_a);
-        lfo_amount = static_cast<float>(lfo_a) / static_cast<float>(MAX_LFO_AMOUNT);
+        value = clamp_input(get_input(DEFAULT_LFO_AMOUNT), MIN_LFO_AMOUNT, MAX_LFO_AMOUNT);
+        printf("%d\n", value);
+        lfo_amount = static_cast<float>(value) / static_cast<float>(MAX_LFO_AMOUNT);
     }
 
     while ((getchar()) != '\n'); // flush stdin
