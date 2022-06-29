@@ -85,9 +85,7 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
         memset(out_buffer, 0, frames_per_buffer * sizeof(float) * NUM_CHANNELS);    /* left & right */
     }
     const int frame_counter = data->p_data.frame_counter[file_id] + static_cast<int>(frames_per_buffer);
-    data->p_data.frame_counter[file_id] = (frame_counter < data->p_data.num_step_frames)
-                                              ? data->p_data.frame_counter[file_id] = frame_counter
-                                              : data->p_data.frame_counter[file_id] = 0;
+    data->p_data.frame_counter[file_id] = (frame_counter < data->p_data.num_step_frames) ? frame_counter : 0;
 }
 
 int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsigned long frames_per_buffer,
