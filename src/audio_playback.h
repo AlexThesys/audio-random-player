@@ -21,7 +21,8 @@ struct play_data
     // 4 bytes padding
 
     play_data()
-        : audio_file(nullptr), file_id(0), cache_id(0), pitch(1.0f), volume(1.0f), num_step_frames(0)
+        : audio_file(nullptr), frame_index(0), frame_counter(0), file_id(0), cache_id(0), pitch(1.0f), volume(1.0f),
+          num_step_frames(0)
     {
     }
 

@@ -44,9 +44,8 @@ static void randomize_data(pa_data *data)
 static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_buffer)
 {
     assert((frames_per_buffer & 0x3) == 0x0);
-    const size_t file_id = static_cast<size_t>(data->p_data.file_id);
     const int frame_index = data->p_data.frame_index;
-    const AudioFile<float> &audio_file = (*data->p_data.audio_file)[file_id];
+    const AudioFile<float> &audio_file = (*data->p_data.audio_file)[static_cast<size_t>(data->p_data.file_id)];
     const int total_samples = _min(audio_file.getNumSamplesPerChannel(), (int)data->p_data.num_step_frames);
     const int audio_frames_left = total_samples - frame_index;
     const size_t num_file_channels = static_cast<size_t>(audio_file.getNumChannels());
