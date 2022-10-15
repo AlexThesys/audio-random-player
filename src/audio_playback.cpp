@@ -38,14 +38,14 @@ static void randomize_data(pa_data *data)
     data->p_data.num_step_frames = data->front_buf->num_step_frames;
     if (data->front_buf->use_lfo)
         lfo_gen.set_rate(data->front_buf->lfo_freq, data->front_buf->lfo_amount);
-    data->p_data.frame_index[static_cast<size_t>(data->p_data.file_id)] = 0;
+    data->p_data.frame_index = 0;
 }
 
 static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_buffer)
 {
     assert((frames_per_buffer & 0x3) == 0x0);
     const size_t file_id = static_cast<size_t>(data->p_data.file_id);
-    const int frame_index = data->p_data.frame_index[file_id];
+    const int frame_index = data->p_data.frame_index;
     const AudioFile<float> &audio_file = (*data->p_data.audio_file)[file_id];
     const int total_samples = _min(audio_file.getNumSamplesPerChannel(), (int)data->p_data.num_step_frames);
     const int audio_frames_left = total_samples - frame_index;
@@ -80,12 +80,12 @@ static void process_audio(float *out_buffer, pa_data *data, size_t frames_per_bu
             out_buffer[7] = ((float*)processing_buffer[stereo_file].data())[i + 3];
         }
 
-        data->p_data.frame_index[file_id] += frames_read;
+        data->p_data.frame_index += frames_read;
     } else {
         memset(out_buffer, 0, frames_per_buffer * sizeof(float) * NUM_CHANNELS);    /* left & right */
     }
-    const int frame_counter = data->p_data.frame_counter[file_id] + static_cast<int>(frames_per_buffer);
-    data->p_data.frame_counter[file_id] = (frame_counter < data->p_data.num_step_frames) ? frame_counter : 0;
+    const int frame_counter = data->p_data.frame_counter + static_cast<int>(frames_per_buffer);
+    data->p_data.frame_counter = (frame_counter < data->p_data.num_step_frames) ? frame_counter : 0;
 }
 
 int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsigned long frames_per_buffer,
@@ -103,7 +103,7 @@ int pa_player::playCallback(const void *input_buffer, void *output_buffer, unsig
 
     pa_data *data = reinterpret_cast<pa_data *>(user_data);
 
-    if (!data->p_data.frame_counter[static_cast<size_t>(data->p_data.file_id)])
+    if (!data->p_data.frame_counter)
         randomize_data(data);
 
     process_audio(reinterpret_cast<float *>(output_buffer), data, static_cast<size_t>(frames_per_buffer));

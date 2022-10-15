@@ -11,8 +11,8 @@ struct play_data
 {
     const audio_file_container *audio_file;
     buffer_container processing_buffer;
-    std::vector<int> frame_index;
-    std::vector<int> frame_counter;
+    int frame_index;
+    int frame_counter;
     int file_id;
     uint32_t cache_id;
     float pitch;
@@ -33,8 +33,8 @@ struct play_data
         pitch = 1.0f;
         volume = 1.0f;
         num_step_frames = 0;
-        frame_index.resize(audio_file->size(), 0);
-        frame_counter.resize(audio_file->size(), 0);
+        frame_index = 0;
+        frame_counter = 0;
     }
 };
 
