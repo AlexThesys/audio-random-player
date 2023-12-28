@@ -6,7 +6,7 @@ include_directories("AudioFile")
 
 file(GLOB SOURCES "src/*.*")
 
-set ( PROJECT_LINK_LIBS portaudio_static_x64.lib )
+set ( PROJECT_LINK_LIBS portaudio.lib )
 link_directories("portaudio/lib")
 
 add_executable (audio_test ${SOURCES})

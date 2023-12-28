@@ -1,6 +1,4 @@
-// audio_test.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include "user_input.h"
@@ -28,14 +26,19 @@ int main(int argc, char **argv)
     middle_buf = &p_params[1];
     new_data = 1;
 
+    audio_renderer renderer;
+    renderer.init(&data);
+
     pa_player audio_player;
-    if (audio_player.init_pa(&data) != paNoError)
+    if (audio_player.init_pa(&renderer) != paNoError)
         return -1;
 
     run_user_loop(audioFiles, data, p_params, disable_fadeout);
 
     if (audio_player.deinit_pa() != paNoError)
         return -1;
+
+    renderer.deinit();
 
     return 0;
 }

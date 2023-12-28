@@ -6,11 +6,12 @@
 #define FRAMES_PER_BUFFER 0x100
 #define MAX_VOLUME 1.0f
 #define FP_IN_VEC 4 // sizeof(__m128) / sizeof(float)
+#define NUM_BUFFERS_POW_2 3
 
 #define PI 3.14159265359f
 #define PI_DIV_4 0.78539816339f
 
-#define MAX_DATA_SIZE 0x100000
+#define MAX_DATA_SIZE 0x400000
 #define LFO_BUFFER_SIZE 1024
 
 #define MAX_LPF_FREQ 20000.0f

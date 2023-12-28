@@ -4,6 +4,7 @@
 
 using audio_file_container = std::vector<AudioFile<float>>;
 using buffer_container = std::array<std::vector<__m128>, NUM_CHANNELS>;
+using output_buffer_container = std::vector<__m128>;
 
 #define verify_pa_no_error_verbose(err)\
 if( (err) != paNoError ) {\

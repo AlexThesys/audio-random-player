@@ -6,6 +6,7 @@
 #include "portaudio.h"
 #include "audio_processing.h"
 #include "cache.h"
+#include "circular_buffer.h"
 
 struct play_data
 {
@@ -95,7 +96,11 @@ struct pa_data
         memset(p_data.processing_buffer[0].data(), 0, sizeof(__m128) * size);
         memset(p_data.processing_buffer[1].data(), 0, sizeof(__m128) * size);
     }
+    void randomize_data();
+    void process_audio(float* out_buffer, size_t frames_per_buffer);
 };
+
+class audio_renderer; // FWD
 
 class pa_player
 {
@@ -106,9 +111,26 @@ class pa_player
     pa_player() : _stream(nullptr)
     {
     }
-    static int playCallback(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
-        const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
-        void* user_data);
-    int init_pa(pa_data *data);
+    int init_pa(audio_renderer* renderer);
     int deinit_pa();
+};
+
+class audio_renderer 
+{
+    pa_data* data = nullptr;
+    std::array<output_buffer_container, (1 << NUM_BUFFERS_POW_2)> buffers;
+    size_t buffer_idx = 0;
+    circular_buffer<output_buffer_container*, NUM_BUFFERS_POW_2> buffer_queue; // thread-safe
+    std::thread render_thread;
+    std::atomic<int> state_render{1};
+public:
+    void init(pa_data* data);
+    void deinit();
+
+    static int fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
+                            const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
+                            void* user_data);
+private:
+    static void render(void* renderer);
+    void process_data();
 };
