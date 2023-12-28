@@ -9,6 +9,11 @@ volatile LONG new_data;
 
 int main(int argc, char **argv)
 {
+    if (std::thread::hardware_concurrency() < 2) {
+        puts("The application is not meant to be run on a single core system...exiting.");
+        return 0;
+    }
+
     bool disable_fadeout = false;
     const char *path = "audio_data";
     process_cmdline_args(argc, argv, &path, &disable_fadeout);
