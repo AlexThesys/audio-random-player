@@ -23,14 +23,9 @@ static inline float semitones_to_pitch_scale(float semitones_dev)
 
 void pa_data::randomize_data()
 {
-    if (InterlockedCompareExchange(&new_data, 0, 1))
+    if (InterlockedCompareExchange(&new_data, 0, 1)) {
         front_buf = (play_params*)InterlockedExchange64((volatile LONG64*)&middle_buf, reinterpret_cast<LONG64>(front_buf));
-    const int num_files = static_cast<int>(p_data.audio_file->size());
-    uint32_t rnd_id = static_cast<uint32_t>(random_gen.i(num_files - 1));
-    cache cache(p_data.cache_id);
-    rnd_id = cache.check(rnd_id, static_cast<uint8_t>(num_files));
-    p_data.cache_id = cache.value();
-    p_data.file_id = static_cast<int>(rnd_id);
+    }
     p_data.pitch = semitones_to_pitch_scale(front_buf->pitch_deviation);
     p_data.volume = random_gen.f(front_buf->volume_lower_bound, MAX_VOLUME);
     const float lpf_freq = random_gen.f(MAX_LPF_FREQ - front_buf->lpf_freq_range, MAX_LPF_FREQ);
@@ -46,7 +41,7 @@ void pa_data::process_audio(float *out_buffer, size_t frames_per_buffer)
 {
     assert((frames_per_buffer & 0x3) == 0x0);
     const int frame_index = p_data.frame_index;
-    const AudioFile<float> &audio_file = (*p_data.audio_file)[static_cast<size_t>(p_data.file_id)];
+    const AudioFile<float> &audio_file = *p_data.audio_file;
     const int total_samples = _min(audio_file.getNumSamplesPerChannel(), (int)p_data.num_step_frames);
     const int audio_frames_left = total_samples - frame_index;
     const size_t num_file_channels = static_cast<size_t>(audio_file.getNumChannels());
@@ -157,23 +152,40 @@ int pa_player::deinit_pa()
     return paNoError;
 }
 
-void audio_renderer::init(pa_data* pdata) 
+bool audio_renderer::init(const char* folder_path, size_t* max_lenght_samples)
 {
-    data = pdata;
+    data = new pa_data();
+    streamer = new audio_streamer();
+    if (!streamer->init(folder_path, max_lenght_samples)) {
+        delete streamer;
+        delete data;
+        return false;
+    }
     static_assert((FRAMES_PER_BUFFER & (FP_IN_VEC - 1)) == 0x0, "Frame buffer size should be divisible by 4.");
     data->resize_processing_buffer(FRAMES_PER_BUFFER);
 
     const __m128 zero = _mm_setzero_ps();
-    for (auto &buf : buffers) {
+    for (auto& buf : buffers) {
         buf.resize(FRAMES_PER_BUFFER * NUM_CHANNELS, zero);
     }
+
+    return true;
+}
+
+void audio_renderer::start_rendering() 
+{
     render_thread = std::thread(render, this);
 }
 
 void audio_renderer::deinit() 
 {
     state_render.store(0);
-    render_thread.join();
+    if (render_thread.joinable()) {
+        render_thread.join();
+    }
+    streamer->deinit();
+    delete streamer;
+    delete data;
 }
 
 int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
@@ -193,8 +205,9 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
     
     output_buffer_container* output = nullptr;
     constexpr size_t buffer_size_bytes = FRAMES_PER_BUFFER * NUM_CHANNELS * sizeof(float);
-    if (renderer->buffer_queue.try_pop_task_queue(output)) {
+    if (renderer->buffer_queue.try_read(output)) {
         memcpy(output_buffer, output->data(), buffer_size_bytes); // TODO: check the disassembly
+        renderer->buffer_queue.advance();
     } else {
         memset(output_buffer, 0, buffer_size_bytes);
     }
@@ -206,7 +219,7 @@ void audio_renderer::render(void* arg)
     audio_renderer &renderer = *(audio_renderer*)arg;
     static const auto mcs = std::chrono::microseconds(1000);
     while (renderer.state_render.load()) {
-        if (!renderer.buffer_queue.is_full_task_queue()) {
+        if (!renderer.buffer_queue.is_full()) {
             renderer.process_data();
         } else {
             std::this_thread::sleep_for(mcs);
@@ -217,12 +230,116 @@ void audio_renderer::render(void* arg)
 void audio_renderer::process_data()
 {
     if (!data->p_data.frame_counter) {
+        data->p_data.audio_file = streamer->request();
+        assert(data->p_data.audio_file);
         data->randomize_data();
     }
     output_buffer_container *output = &buffers[buffer_idx];
     data->process_audio(reinterpret_cast<float*>(output->data()), static_cast<size_t>(FRAMES_PER_BUFFER));
-    if (!buffer_queue.try_push_task_queue(output)) {
-        assert(false);
-    }
+    assert(buffer_queue.try_push(output));
     buffer_idx = ++buffer_idx & (buffers.size() - 1);
+}
+
+bool audio_streamer::init(const char* folder_path, size_t* max_lenght_samples)
+{
+    if (!load_file_names(folder_path, max_lenght_samples)) {
+        return false;
+    }
+
+    // push the file batch of files right away
+    for (const auto &_ : audio_files) {
+        load_file();
+    }
+
+    streamer_thread = std::thread(stream, this);
+
+    return true;
+}
+
+void audio_streamer::deinit()
+{
+    state_streaming.store(0);
+    sem.signal();
+    if (streamer_thread.joinable()) {
+        streamer_thread.join();
+    }
+}
+
+AudioFile<float>* audio_streamer::request()
+{
+    AudioFile<float>* file = nullptr;
+    // we first advance the read index and only then start reading, so that the data wouldn't been overriden during the process
+    file_queue.advance();
+    file_queue.read_tail(file);
+    sem.signal(); // signal to load the next file
+    return file;
+}
+
+void audio_streamer::stream(void* arg)
+{
+    audio_streamer* streamer = (audio_streamer*)arg;
+
+    while (streamer->state_streaming.load()) {
+        if (streamer->file_queue.is_empty()) {
+            streamer->load_file();
+        } else {
+            streamer->sem.wait();
+        }
+    }
+}
+
+size_t audio_streamer::get_rnd_file_id() 
+{
+    const int num_files = static_cast<int>(file_names.size());
+    uint32_t rnd_id = static_cast<uint32_t>(random_gen.i(num_files - 1));
+    cache cache(cache_id);
+    rnd_id = cache.check(rnd_id, static_cast<uint8_t>(num_files));
+    cache_id = cache.value();
+    return static_cast<const size_t>(rnd_id);
+}
+
+void audio_streamer::load_file() 
+{
+    AudioFile<float>& audio_file = audio_files[buffer_idx];
+    const size_t file_id = get_rnd_file_id();
+    assert(audio_file.load(file_names[file_id]));
+    file_queue.try_push(&audio_file);
+    buffer_idx = ++buffer_idx & (audio_files.size() - 1);
+}
+
+bool audio_streamer::load_file_names(const char* folder_path, size_t* max_lenght_samples)
+{
+    char path[MAX_PATH];
+    memset(path, 0, sizeof(path));
+    strcpy_s(path, folder_path);
+    strcat_s(path, "\\*.wav");
+
+    size_t max_size = 0;
+
+    WIN32_FIND_DATA fd;
+    HANDLE h_find = ::FindFirstFile(path, &fd);
+    if (h_find != INVALID_HANDLE_VALUE) {
+        do {
+            if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                memset(path, 0, sizeof(path));
+                strcpy_s(path, folder_path);
+                strcat_s(path, "\\");
+                strcat_s(path, fd.cFileName);
+
+                AudioFile<float> audio_file;
+                audio_file.load(path);
+                // check size
+                const size_t num_samples = audio_file.getNumSamplesPerChannel();
+                const size_t size = num_samples * audio_file.getNumChannels() * sizeof(float); // for fp32 wav format
+                if (size < MAX_DATA_SIZE) {
+                    file_names.push_back(std::string(path));
+                    max_size = _max(num_samples, max_size);
+                }
+            }
+        } while (::FindNextFile(h_find, &fd));
+        ::FindClose(h_find);
+        *max_lenght_samples = max_size;
+        return !!file_names.size();
+    }
+    return false;
 }

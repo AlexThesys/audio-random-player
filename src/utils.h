@@ -1,8 +1,10 @@
 #pragma once
 
+#include <array>
+
 #include "xmmintrin.h"
 
-using audio_file_container = std::vector<AudioFile<float>>;
+using audio_file_container = std::array<AudioFile<float>, (1 << NUM_FILES_POW_2)>;
 using buffer_container = std::array<std::vector<__m128>, NUM_CHANNELS>;
 using output_buffer_container = std::vector<__m128>;
 

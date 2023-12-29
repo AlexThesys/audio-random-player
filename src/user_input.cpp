@@ -9,16 +9,16 @@
 extern volatile play_params *middle_buf;
 extern volatile LONG new_data;
 
-static int calculate_step_time(int walk_speed, const audio_file_container audio_files, bool no_fadeout)
+static int calculate_step_time(int walk_speed, const size_t max_lenght_samples, bool no_fadeout)
 {
     const float step_size = 0.762f; // for an average man
     const float kph_2_mps_rec = 1.0f / 3.6f;
     const float w_speed = static_cast<float>(walk_speed) * kph_2_mps_rec;
-    int step_num_frames = static_cast<int>(ceilf(static_cast<float>(SAMPLE_RATE) * step_size / w_speed));
+    int step_num_frames;
     if (no_fadeout) { // always play full length of all the files - don't fade out them
-        for (size_t i = 0, sz = audio_files.size(); i < sz; i++) {
-            step_num_frames = _max(step_num_frames, audio_files[i].getNumSamplesPerChannel());
-        }
+        step_num_frames = (int)max_lenght_samples;
+    } else {
+        step_num_frames = static_cast<int>(ceilf(static_cast<float>(SAMPLE_RATE) * step_size / w_speed));
     }
     return step_num_frames;
 }
@@ -41,15 +41,15 @@ static int get_input(int default_value)
     return (int)l;
 }
 
-void get_user_params(play_params *data, const audio_file_container &audioFiles, bool no_fadeout)
+void user_params::get_user_params(play_params *data)
 {
     puts("Please provide the playback parameters in decimal integer format!");
     puts("Enter any letter to skip the current parameter and use default.");
     int value;
     printf("\nEnter the walk speed in kph [1...12]:\t");
     value = clamp_input(get_input(DEFAULT_WALK_SPEED), MIN_WALK_SPEED, MAX_WALK_SPEED);
+    const int step_num_frames = calculate_step_time(value, max_lenght_samples, disable_fadeout);
     printf("%d\n", value);
-    const int step_num_frames = calculate_step_time(value, audioFiles, no_fadeout);
     printf("\nEnter the pitch deviation in semitones [0...12]:\t");
     value = clamp_input(get_input(DEFAULT_PITCH_DEVIATION), MIN_PITCH_DEVIATION, MAX_PITCH_DEVIATION);
     printf("%d\n", value);
@@ -96,45 +96,7 @@ void get_user_params(play_params *data, const audio_file_container &audioFiles, 
                enable_dist);
 }
 
-bool load_files(audio_file_container &audio_files, const char *folder_path)
-{
-    char path[MAX_PATH];
-    memset(path, 0, sizeof(path));
-    strcpy_s(path, folder_path);
-    strcat_s(path, "\\*.wav");
-
-    audio_files.reserve(NUM_FILES);
-
-    size_t total_size = 0;
-
-    WIN32_FIND_DATA fd;
-    HANDLE h_find = ::FindFirstFile(path, &fd);
-    if (h_find != INVALID_HANDLE_VALUE) {
-        do {
-            if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                memset(path, 0, sizeof(path));
-                strcpy_s(path, folder_path);
-                strcat_s(path, "\\");
-                strcat_s(path, fd.cFileName);
-
-                audio_files.push_back(AudioFile<float>());
-                audio_files.back().load(path);
-                total_size +=
-                    audio_files.back().getNumSamplesPerChannel() * audio_files.back().getNumChannels() * sizeof(float); // for fp32 wav format
-                if (total_size > MAX_DATA_SIZE) {
-                    audio_files.pop_back();
-                    puts("Max data size exceeded, no more files are going to be loaded.");
-                    break;
-                }
-            }
-        } while (::FindNextFile(h_find, &fd));
-        ::FindClose(h_find);
-        return !!audio_files.size();
-    }
-    return false;
-}
-
-void process_cmdline_args(int argc, char **argv, const char **res, bool *nofadeout)
+void user_params::process_cmdline_args(int argc, char **argv, const char **res)
 {
     bool nofade;
     for (int i = 1, sz = _min(argc, 3); i < sz; i++) {
@@ -142,12 +104,12 @@ void process_cmdline_args(int argc, char **argv, const char **res, bool *nofadeo
         if (!nofade) {
             *res = argv[i];
         } else {
-            *nofadeout = nofade;
+            disable_fadeout = nofade;
         }
     }
 }
 
-void run_user_loop(const audio_file_container &audio_files, pa_data &data, play_params *p_params, bool disable_fadeout)
+void user_params::run_user_loop(pa_data &data, play_params *p_params)
 {
     play_params *back_buf = &p_params[0];
     do {
@@ -156,7 +118,7 @@ void run_user_loop(const audio_file_container &audio_files, pa_data &data, play_
         if (ch == 'q' || ch == 'Q') {
             break;
         } else if (ch == 'p' || ch == 'P') {      
-            get_user_params(back_buf, audio_files, disable_fadeout);
+            get_user_params(back_buf);
             back_buf = (play_params*)InterlockedExchange64((volatile LONG64*)&middle_buf, reinterpret_cast<LONG64>(back_buf));
             new_data = 1;
         } else {

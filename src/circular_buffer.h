@@ -18,20 +18,47 @@ class circular_buffer
 public:
 	circular_buffer() : read_idx(0), write_idx(0) {}
 
-    bool is_empty_task_queue() const
+    bool is_empty() const
     {
         return (size.load() == 0);
     }
 
-    bool is_full_task_queue() const 
+    bool is_full() const 
     {
         return (size.load() == capacity);
     }
 
-    bool try_pop_task_queue(T &item) 
+    void read_tail(T& item)
     {
         guard.lock();
-        if (is_empty_task_queue()) {
+        item = queue[read_idx];
+        guard.unlock();
+    }
+
+    bool try_read(T& item) 
+    {
+        guard.lock();
+        if (is_empty()) {
+            guard.unlock();
+            return false;
+        }
+        item = queue[read_idx];
+        guard.unlock();
+        return true;
+    }
+
+    void advance() 
+    {
+        guard.lock();
+        std::atomic_fetch_add(&size, -1);
+        read_idx = (read_idx + 1) & (capacity - 1);
+        guard.unlock();
+    }
+
+    bool try_pop(T &item) 
+    {
+        guard.lock();
+        if (is_empty()) {
             guard.unlock();
             return false;
         }
@@ -42,9 +69,9 @@ public:
         return true;
     }
 
-    bool try_push_task_queue(const T task) {
+    bool try_push(const T task) {
         guard.lock();
-        if (is_full_task_queue()) {
+        if (is_full()) {
             guard.unlock();
             return false;
         }

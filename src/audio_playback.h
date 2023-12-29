@@ -7,31 +7,27 @@
 #include "audio_processing.h"
 #include "cache.h"
 #include "circular_buffer.h"
+#include "semaphore.h"
 
 struct play_data
 {
-    const audio_file_container *audio_file;
+    const AudioFile<float> *audio_file;
     buffer_container processing_buffer;
     int frame_index;
     int frame_counter;
-    int file_id;
-    uint32_t cache_id;
     float pitch;
     float volume;
     int num_step_frames;
     // 4 bytes padding
 
     play_data()
-        : audio_file(nullptr), frame_index(0), frame_counter(0), file_id(0), cache_id(0), pitch(1.0f), volume(1.0f),
+        : audio_file(nullptr), frame_index(0), frame_counter(0), pitch(1.0f), volume(1.0f),
           num_step_frames(0)
     {
     }
 
-    void init(const audio_file_container *af)
+    void init()
     {
-        audio_file = af;
-        file_id = 0;
-        cache_id = 0;
         pitch = 1.0f;
         volume = 1.0f;
         num_step_frames = 0;
@@ -72,9 +68,9 @@ struct pa_data
     play_data p_data;
     play_params *front_buf;
 
-    pa_data(const audio_file_container *af) : front_buf(nullptr)
+    pa_data() : front_buf(nullptr)
     {
-        p_data.init(af);
+        p_data.init();
     }
 
     // C5220
@@ -115,17 +111,22 @@ class pa_player
     int deinit_pa();
 };
 
+class audio_streamer; // FWD
+
 class audio_renderer 
 {
     pa_data* data = nullptr;
+    audio_streamer* streamer = nullptr;
     std::array<output_buffer_container, (1 << NUM_BUFFERS_POW_2)> buffers;
     size_t buffer_idx = 0;
     circular_buffer<output_buffer_container*, NUM_BUFFERS_POW_2> buffer_queue; // thread-safe
     std::thread render_thread;
     std::atomic<int> state_render{1};
 public:
-    void init(pa_data* data);
+    bool init(const char* folder_path, size_t* max_lenght_samples);
+    void start_rendering();
     void deinit();
+    pa_data* get_data() { return data; }
 
     static int fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
                             const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
@@ -133,4 +134,27 @@ public:
 private:
     static void render(void* renderer);
     void process_data();
+};
+
+class audio_streamer
+{
+    std::vector<std::string> file_names;
+    audio_file_container audio_files;
+    size_t buffer_idx = 0;
+    circular_buffer<AudioFile<float>*, NUM_FILES_POW_2> file_queue;
+    uint32_t cache_id = 0;
+    std::thread streamer_thread;
+    semaphore sem;
+    std::atomic<int> state_streaming{1};
+
+public:
+    audio_streamer() : cache_id(0) {}
+    bool init(const char* folder_path, size_t* max_lenght_samples);
+    void deinit();
+    AudioFile<float>* request();
+private:
+    static void stream(void* arg);
+    size_t get_rnd_file_id();
+    void load_file();
+    bool load_file_names(const char* folder_path, size_t* max_lenght_samples);
 };
