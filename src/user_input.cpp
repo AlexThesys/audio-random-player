@@ -118,8 +118,8 @@ void user_params::run_user_loop(pa_data &data, tripple_buffer<play_params> *p_pa
         if (ch == 'q' || ch == 'Q') {
             break;
         } else if (ch == 'p' || ch == 'P') { 
-            play_params* params_back_buffer = p_params->get_back_buffer();
-            get_user_params(params_back_buffer);
+            play_params* params_back_buffer_ptr = p_params->get_back_buffer();
+            get_user_params(params_back_buffer_ptr);
             p_params->publish();
         } else {
             while ((getchar()) != '\n'); // flush stdin

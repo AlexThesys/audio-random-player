@@ -2,11 +2,12 @@
 
 #include <array>
 
-#include "xmmintrin.h"
+#include "emmintrin.h"
 
 using audio_file_container = std::array<AudioFile<float>, (1 << NUM_FILES_POW_2)>;
 using buffer_container = std::array<std::vector<__m128>, NUM_CHANNELS>;
 using output_buffer_container = std::vector<__m128>;
+using viz_container = std::array<__m128i, FRAMES_PER_BUFFER * NUM_CHANNELS / FP_IN_VEC>;
 
 #define verify_pa_no_error_verbose(err)\
 if( (err) != paNoError ) {\

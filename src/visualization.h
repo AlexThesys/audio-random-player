@@ -6,6 +6,8 @@
 #include <GL/glew.h>
 #include "Window.h"
 #include "Shader.h"
+#include "tripple_buffer.h"
+#include "utils.h"
 
 class visualizer
 {
@@ -14,11 +16,13 @@ class visualizer
     GLuint VAO;
     GLuint VBO;
 
+    tripple_buffer<viz_container>* viz_data_buffer = nullptr;
+
     std::atomic<int> state_render{1};
     std::thread render_thread;
 
 public:
-    void init();
+    void init(tripple_buffer<viz_container>* viz_buf);
     void deinit() 
     { 
         state_render.store(0); 

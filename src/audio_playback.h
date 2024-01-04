@@ -119,6 +119,7 @@ class audio_renderer
     pa_data* data = nullptr;
     audio_streamer* streamer = nullptr;
     tripple_buffer<play_params> *params_buffer = nullptr;
+    tripple_buffer<viz_container> *viz_data_buffer = nullptr;
     std::array<output_buffer_container, (1 << NUM_BUFFERS_POW_2)> buffers;
     size_t buffer_idx = 0;
     circular_buffer<output_buffer_container*, NUM_BUFFERS_POW_2> buffer_queue; // thread-safe
@@ -130,6 +131,7 @@ public:
     void deinit();
     pa_data* get_data() { return data; }
     tripple_buffer<play_params> *get_params_buffer() { return params_buffer; }
+    tripple_buffer<viz_container> *get_viz_data_buffer() { return viz_data_buffer; }
 
     static int fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
                             const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
@@ -137,6 +139,14 @@ public:
 private:
     static void render(void* renderer);
     void process_data();
+    void zero_out_viz_data()
+    {
+        for (int i = 0; i < 3; i++) {
+            viz_container *data = viz_data_buffer->get_data((size_t)i);
+            memset(data->data(), 0, sizeof(int16_t) * FRAMES_PER_BUFFER);
+        }
+    }
+    void submit_viz_data(const output_buffer_container *output);
 };
 
 class audio_streamer

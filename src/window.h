@@ -13,7 +13,6 @@ private:
 	static void handle_keys(GLFWwindow *window, int key, int code, int action, int mode);
     static void on_frame_buffer_size(GLFWwindow * window, int width, int height);
 public:
-	
 	r_window(GLint w = 768, GLint h = 768) : width(w), height(h), buffer_width(0), buffer_height(0), main_window(nullptr) {}
 	int initialise(bool full_screen=false);
 	void deinitialize();

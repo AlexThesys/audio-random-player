@@ -6,23 +6,29 @@
 
 bool r_shader::load_shaders(const char* vs_file_path, const char* fs_file_path, const char* gs_file_path)
 {
-    GLchar *vs_code, *fs_code, *gs_code = nullptr; // caller is responsible for the deallocation
+    // caller is responsible for the deallocation
+    GLchar* vs_code = nullptr; 
+    GLchar* fs_code = nullptr;
+    GLchar* gs_code = nullptr; 
+    GLuint v_shader = 0;
+    GLuint f_shader = 0;
+    GLuint g_shader = 0;
+
 	vs_code = file_to_string(vs_file_path);
 	fs_code = file_to_string(fs_file_path);
 
-	GLuint v_shader = glCreateShader(GL_VERTEX_SHADER);
+	v_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(v_shader, 1, &vs_code, nullptr);
 	glCompileShader(v_shader);
     if (!check_compile_errors(v_shader))
         goto exit;
 
-	GLuint f_shader = glCreateShader(GL_FRAGMENT_SHADER);
+	f_shader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(f_shader, 1, &fs_code, nullptr);
 	glCompileShader(f_shader);
     if (!check_compile_errors(f_shader))
         goto exit;
 
-	GLuint g_shader = 0;
 	if (gs_file_path != nullptr)
 	{
         gs_code = file_to_string(gs_file_path);

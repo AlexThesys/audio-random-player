@@ -152,10 +152,12 @@ bool audio_renderer::init(const char* folder_path, size_t* max_lenght_samples)
     data = new pa_data();
     streamer = new audio_streamer();
     params_buffer = new tripple_buffer<play_params>();
+    viz_data_buffer = new tripple_buffer<viz_container>();
     if (!streamer->init(folder_path, max_lenght_samples)) {
         delete streamer;
         delete data;
         delete params_buffer;
+        delete viz_data_buffer;
         return false;
     }
     static_assert((FRAMES_PER_BUFFER & (FP_IN_VEC - 1)) == 0x0, "Frame buffer size should be divisible by 4.");
@@ -163,8 +165,10 @@ bool audio_renderer::init(const char* folder_path, size_t* max_lenght_samples)
 
     const __m128 zero = _mm_setzero_ps();
     for (auto& buf : buffers) {
-        buf.resize(FRAMES_PER_BUFFER * NUM_CHANNELS, zero);
+        buf.resize(FRAMES_PER_BUFFER * NUM_CHANNELS / FP_IN_VEC, zero);
     }
+
+    zero_out_viz_data();
 
     return true;
 }
@@ -184,6 +188,7 @@ void audio_renderer::deinit()
     delete streamer;
     delete data;
     delete params_buffer;
+    delete viz_data_buffer;
 }
 
 int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
@@ -205,9 +210,17 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
     constexpr size_t buffer_size_bytes = FRAMES_PER_BUFFER * NUM_CHANNELS * sizeof(float);
     if (renderer->buffer_queue.try_read(output)) {
         memcpy(output_buffer, output->data(), buffer_size_bytes); // TODO: check the disassembly
+
+        renderer->submit_viz_data(output); // would be better to do this in audio render thread, not in audio callback
+
         renderer->buffer_queue.advance();
     } else {
         memset(output_buffer, 0, buffer_size_bytes);
+        // zero out viz_data - would be better to do this in audio render thread, not in audio callback
+        auto* viz_data_buffer = renderer->get_viz_data_buffer();
+        viz_container* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
+        memset(viz_data_back_buffer_ptr->data(), 0, buffer_size_bytes);
+        viz_data_buffer->publish();
     }
     return paContinue;
 }
@@ -236,6 +249,14 @@ void audio_renderer::process_data()
     data->process_audio(reinterpret_cast<float*>(output->data()), static_cast<size_t>(FRAMES_PER_BUFFER));
     assert(buffer_queue.try_push(output));
     buffer_idx = ++buffer_idx & (buffers.size() - 1);
+}
+
+void audio_renderer::submit_viz_data(const output_buffer_container* output)
+{
+    constexpr size_t buffer_size_bytes = FRAMES_PER_BUFFER * NUM_CHANNELS * sizeof(float);
+    viz_container* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
+    memcpy(viz_data_back_buffer_ptr->data(), output->data(), buffer_size_bytes);
+    viz_data_buffer->publish();
 }
 
 bool audio_streamer::init(const char* folder_path, size_t* max_lenght_samples)

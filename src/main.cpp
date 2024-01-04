@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     }
 
     visualizer audio_viz;
-    audio_viz.init();
+    audio_viz.init(renderer->get_viz_data_buffer());
 
     uparams.get_user_params(renderer->get_params_buffer()->get_data(1));
 
