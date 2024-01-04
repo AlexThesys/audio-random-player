@@ -7,14 +7,12 @@
 #include "user_input.h"
 #include "visualization.h"
 
-volatile  play_params *params_middle_buffer;
-volatile LONG new_data;
-
 int main(int argc, char **argv)
 {
+    int ret = 0;
     if (std::thread::hardware_concurrency() < 2) {
         puts("The application is not meant to be run on a single core system...exiting.");
-        return 0;
+        return ret;
     }
 
     const char *folder_path = "audio_data";
@@ -31,25 +29,25 @@ int main(int argc, char **argv)
     visualizer audio_viz;
     audio_viz.init();
 
-    play_params p_params[3];
-    uparams.get_user_params(&p_params[1]);
-    renderer->get_data()->params_front_buffer = &p_params[2];
-    params_middle_buffer = &p_params[1];
-    new_data = 1;
+    uparams.get_user_params(renderer->get_params_buffer()->get_data(1));
 
     renderer->start_rendering();
 
     pa_player audio_player;
-    if (audio_player.init_pa(renderer.get()) != paNoError)
-        return -1;
+    if (audio_player.init_pa(renderer.get()) != paNoError) {
+        ret = -1;
+        goto exit;
+    }
 
-    uparams.run_user_loop(*renderer->get_data(), p_params);
+    uparams.run_user_loop(*renderer->get_data(), renderer->get_params_buffer());
 
-    if (audio_player.deinit_pa() != paNoError)
-        return -1;
+    if (audio_player.deinit_pa() != paNoError) {
+        ret = -1;
+    }
 
+exit:
     audio_viz.deinit();
     renderer->deinit();
 
-    return 0;
+    return ret;
 }

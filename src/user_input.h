@@ -8,5 +8,5 @@ struct user_params {
 
 	void get_user_params(play_params* data);
 	void process_cmdline_args(int argc, char** argv, const char** res);
-	void run_user_loop(pa_data& data, play_params* p_params);
+	void run_user_loop(pa_data& data, tripple_buffer<play_params>* p_params);
 };

@@ -110,18 +110,17 @@ void user_params::process_cmdline_args(int argc, char **argv, const char **res)
 }
 
 // main thread loop
-void user_params::run_user_loop(pa_data &data, play_params *p_params)
+void user_params::run_user_loop(pa_data &data, tripple_buffer<play_params> *p_params)
 {
-    play_params *params_back_buffer = &p_params[0];
     do {
         puts("\nEnter \'q\' to stop the playback or \'p\' to change parameters...");
         const char ch = static_cast<char>(getchar());
         if (ch == 'q' || ch == 'Q') {
             break;
-        } else if (ch == 'p' || ch == 'P') {      
+        } else if (ch == 'p' || ch == 'P') { 
+            play_params* params_back_buffer = p_params->get_back_buffer();
             get_user_params(params_back_buffer);
-            params_back_buffer = (play_params*)InterlockedExchange64((volatile LONG64*)&params_middle_buffer, reinterpret_cast<LONG64>(params_back_buffer));
-            new_data = 1;
+            p_params->publish();
         } else {
             while ((getchar()) != '\n'); // flush stdin
         }

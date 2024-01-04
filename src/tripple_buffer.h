@@ -14,17 +14,17 @@ class tripple_buffer {
 		T *back_buffer_ptr;
 		volatile T *middle_buffer_ptr;
 	};
-	volatile int has_new_data;
+	volatile LONG has_new_data;
 public:
 	tripple_buffer() : has_new_data(1)
 	{
-		front_buffer_ptr = data[1];
-		back_buffer_ptr = data[0];
-		middle_buffer_ptr = data[2];
+		front_buffer_ptr = &data[2];
+		back_buffer_ptr = &data[0];
+		middle_buffer_ptr = &data[1];
 	}
-	T* get_data(size_t id) { return data[id]; }
+	T* get_data(size_t id) { return &data[id]; }
 	T* get_back_buffer() { return back_buffer_ptr; }
-	void produce() 
+	void publish() 
 	{
 		back_buffer_ptr = (T*)InterlockedExchange64((volatile LONG64*)&middle_buffer_ptr, reinterpret_cast<LONG64>(back_buffer_ptr));
 		has_new_data = 1;
@@ -34,5 +34,6 @@ public:
 		if (InterlockedCompareExchange(&has_new_data, 0, 1)) {
 			front_buffer_ptr = (T*)InterlockedExchange64((volatile LONG64*)&middle_buffer_ptr, reinterpret_cast<LONG64>(front_buffer_ptr));
 		}
+		return front_buffer_ptr;
 	}
 };

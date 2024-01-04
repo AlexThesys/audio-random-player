@@ -12,20 +12,15 @@ static dsp::filter lp_filter;
 static const dsp::modulation::wavetable w_table;
 static dsp::modulation::lfo lfo_gen{&w_table};
 
-extern volatile play_params *params_middle_buffer;
-extern volatile LONG new_data;
-
 static inline float semitones_to_pitch_scale(float semitones_dev)
 {
     const float semitones = random_gen.f(-semitones_dev, semitones_dev);
     return powf(2.0f, semitones / 12.0f);
 }
 
-void pa_data::randomize_data()
+void pa_data::randomize_data(play_params* params_front_buffer)
 {
-    if (InterlockedCompareExchange(&new_data, 0, 1)) {
-        params_front_buffer = (play_params*)InterlockedExchange64((volatile LONG64*)&params_middle_buffer, reinterpret_cast<LONG64>(params_front_buffer));
-    }
+    uparams = params_front_buffer;
     p_data.pitch = semitones_to_pitch_scale(params_front_buffer->pitch_deviation);
     p_data.volume = random_gen.f(params_front_buffer->volume_lower_bound, MAX_VOLUME);
     const float lpf_freq = random_gen.f(MAX_LPF_FREQ - params_front_buffer->lpf_freq_range, MAX_LPF_FREQ);
@@ -55,9 +50,9 @@ void pa_data::process_audio(float *out_buffer, size_t frames_per_buffer)
             static_cast<size_t>(out_samples), frames_per_buffer, num_file_channels,
             (total_samples < audio_file.getNumSamplesPerChannel())));
 
-        apply_volume(processing_buffer, num_file_channels, p_data.volume, params_front_buffer->use_lfo, lfo_gen);
+        apply_volume(processing_buffer, num_file_channels, p_data.volume, uparams->use_lfo, lfo_gen);
 
-        if (params_front_buffer->waveshaper_enabled)
+        if (uparams->waveshaper_enabled)
             dsp::waveshaper::process(processing_buffer, num_file_channels, dsp::waveshaper::default_params);
 
         lp_filter.process(processing_buffer, num_file_channels);
@@ -156,9 +151,11 @@ bool audio_renderer::init(const char* folder_path, size_t* max_lenght_samples)
 {
     data = new pa_data();
     streamer = new audio_streamer();
+    params_buffer = new tripple_buffer<play_params>();
     if (!streamer->init(folder_path, max_lenght_samples)) {
         delete streamer;
         delete data;
+        delete params_buffer;
         return false;
     }
     static_assert((FRAMES_PER_BUFFER & (FP_IN_VEC - 1)) == 0x0, "Frame buffer size should be divisible by 4.");
@@ -186,6 +183,7 @@ void audio_renderer::deinit()
     streamer->deinit();
     delete streamer;
     delete data;
+    delete params_buffer;
 }
 
 int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
@@ -232,7 +230,7 @@ void audio_renderer::process_data()
     if (!data->p_data.frame_counter) {
         data->p_data.audio_file = streamer->request();
         assert(data->p_data.audio_file);
-        data->randomize_data();
+        data->randomize_data(params_buffer->consume());
     }
     output_buffer_container *output = &buffers[buffer_idx];
     data->process_audio(reinterpret_cast<float*>(output->data()), static_cast<size_t>(FRAMES_PER_BUFFER));

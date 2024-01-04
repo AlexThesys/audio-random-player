@@ -8,6 +8,7 @@
 #include "cache.h"
 #include "circular_buffer.h"
 #include "semaphore.h"
+#include "tripple_buffer.h"
 
 struct play_data
 {
@@ -66,9 +67,9 @@ struct play_params
 struct pa_data
 {
     play_data p_data;
-    play_params *params_front_buffer;
+    const play_params* uparams;
 
-    pa_data() : params_front_buffer(nullptr)
+    pa_data() : uparams(nullptr)
     {
         p_data.init();
     }
@@ -92,7 +93,7 @@ struct pa_data
         memset(p_data.processing_buffer[0].data(), 0, sizeof(__m128) * size);
         memset(p_data.processing_buffer[1].data(), 0, sizeof(__m128) * size);
     }
-    void randomize_data();
+    void randomize_data(play_params* params_front_buffer);
     void process_audio(float* out_buffer, size_t frames_per_buffer);
 };
 
@@ -117,6 +118,7 @@ class audio_renderer
 {
     pa_data* data = nullptr;
     audio_streamer* streamer = nullptr;
+    tripple_buffer<play_params> *params_buffer = nullptr;
     std::array<output_buffer_container, (1 << NUM_BUFFERS_POW_2)> buffers;
     size_t buffer_idx = 0;
     circular_buffer<output_buffer_container*, NUM_BUFFERS_POW_2> buffer_queue; // thread-safe
@@ -127,6 +129,7 @@ public:
     void start_rendering();
     void deinit();
     pa_data* get_data() { return data; }
+    tripple_buffer<play_params> *get_params_buffer() { return params_buffer; }
 
     static int fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
                             const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
