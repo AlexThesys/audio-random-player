@@ -75,7 +75,7 @@ void process(buffer_container &buffer, size_t num_channels, const params &p)
     for (size_t ch = 0; ch < num_channels; ch++) {
         for (int i = 0; i < b_size; i++) {
             __m128 sample = buffer[ch][i];
-            for (int j = 0; j < p.num_stages; j++) {
+            for (uint32_t j = 0; j < p.num_stages; j++) {
                 __m128i mask = _mm_srai_epi32(*(__m128i *)&sample, 0x1f);
                 __m128 coef = _mm_and_ps(*(__m128 *)&mask, c_neg);
                 mask = _mm_xor_si128(mask, not_mask);

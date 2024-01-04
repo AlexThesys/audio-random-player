@@ -6,7 +6,7 @@
 #include "user_input.h"
 #include "utils.h"
 
-extern volatile play_params *middle_buf;
+extern volatile play_params *params_middle_buffer;
 extern volatile LONG new_data;
 
 static int calculate_step_time(int walk_speed, const size_t max_lenght_samples, bool no_fadeout)
@@ -109,17 +109,18 @@ void user_params::process_cmdline_args(int argc, char **argv, const char **res)
     }
 }
 
+// main thread loop
 void user_params::run_user_loop(pa_data &data, play_params *p_params)
 {
-    play_params *back_buf = &p_params[0];
+    play_params *params_back_buffer = &p_params[0];
     do {
         puts("\nEnter \'q\' to stop the playback or \'p\' to change parameters...");
         const char ch = static_cast<char>(getchar());
         if (ch == 'q' || ch == 'Q') {
             break;
         } else if (ch == 'p' || ch == 'P') {      
-            get_user_params(back_buf);
-            back_buf = (play_params*)InterlockedExchange64((volatile LONG64*)&middle_buf, reinterpret_cast<LONG64>(back_buf));
+            get_user_params(params_back_buffer);
+            params_back_buffer = (play_params*)InterlockedExchange64((volatile LONG64*)&params_middle_buffer, reinterpret_cast<LONG64>(params_back_buffer));
             new_data = 1;
         } else {
             while ((getchar()) != '\n'); // flush stdin

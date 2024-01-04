@@ -12,7 +12,7 @@ static dsp::filter lp_filter;
 static const dsp::modulation::wavetable w_table;
 static dsp::modulation::lfo lfo_gen{&w_table};
 
-extern volatile play_params *middle_buf;
+extern volatile play_params *params_middle_buffer;
 extern volatile LONG new_data;
 
 static inline float semitones_to_pitch_scale(float semitones_dev)
@@ -24,16 +24,16 @@ static inline float semitones_to_pitch_scale(float semitones_dev)
 void pa_data::randomize_data()
 {
     if (InterlockedCompareExchange(&new_data, 0, 1)) {
-        front_buf = (play_params*)InterlockedExchange64((volatile LONG64*)&middle_buf, reinterpret_cast<LONG64>(front_buf));
+        params_front_buffer = (play_params*)InterlockedExchange64((volatile LONG64*)&params_middle_buffer, reinterpret_cast<LONG64>(params_front_buffer));
     }
-    p_data.pitch = semitones_to_pitch_scale(front_buf->pitch_deviation);
-    p_data.volume = random_gen.f(front_buf->volume_lower_bound, MAX_VOLUME);
-    const float lpf_freq = random_gen.f(MAX_LPF_FREQ - front_buf->lpf_freq_range, MAX_LPF_FREQ);
-    const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + front_buf->lpf_q_range);
+    p_data.pitch = semitones_to_pitch_scale(params_front_buffer->pitch_deviation);
+    p_data.volume = random_gen.f(params_front_buffer->volume_lower_bound, MAX_VOLUME);
+    const float lpf_freq = random_gen.f(MAX_LPF_FREQ - params_front_buffer->lpf_freq_range, MAX_LPF_FREQ);
+    const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + params_front_buffer->lpf_q_range);
     lp_filter.setup(lpf_freq, lpf_q);
-    p_data.num_step_frames = front_buf->num_step_frames;
-    if (front_buf->use_lfo)
-        lfo_gen.set_rate(front_buf->lfo_freq, front_buf->lfo_amount);
+    p_data.num_step_frames = params_front_buffer->num_step_frames;
+    if (params_front_buffer->use_lfo)
+        lfo_gen.set_rate(params_front_buffer->lfo_freq, params_front_buffer->lfo_amount);
     p_data.frame_index = 0;
 }
 
@@ -55,9 +55,9 @@ void pa_data::process_audio(float *out_buffer, size_t frames_per_buffer)
             static_cast<size_t>(out_samples), frames_per_buffer, num_file_channels,
             (total_samples < audio_file.getNumSamplesPerChannel())));
 
-        apply_volume(processing_buffer, num_file_channels, p_data.volume, front_buf->use_lfo, lfo_gen);
+        apply_volume(processing_buffer, num_file_channels, p_data.volume, params_front_buffer->use_lfo, lfo_gen);
 
-        if (front_buf->waveshaper_enabled)
+        if (params_front_buffer->waveshaper_enabled)
             dsp::waveshaper::process(processing_buffer, num_file_channels, dsp::waveshaper::default_params);
 
         lp_filter.process(processing_buffer, num_file_channels);

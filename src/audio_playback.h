@@ -66,9 +66,9 @@ struct play_params
 struct pa_data
 {
     play_data p_data;
-    play_params *front_buf;
+    play_params *params_front_buffer;
 
-    pa_data() : front_buf(nullptr)
+    pa_data() : params_front_buffer(nullptr)
     {
         p_data.init();
     }

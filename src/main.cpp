@@ -5,8 +5,9 @@
 #include <stdio.h>
 
 #include "user_input.h"
+#include "visualization.h"
 
-volatile  play_params *middle_buf;
+volatile  play_params *params_middle_buffer;
 volatile LONG new_data;
 
 int main(int argc, char **argv)
@@ -27,10 +28,13 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    visualizer audio_viz;
+    audio_viz.init();
+
     play_params p_params[3];
     uparams.get_user_params(&p_params[1]);
-    renderer->get_data()->front_buf = &p_params[2];
-    middle_buf = &p_params[1];
+    renderer->get_data()->params_front_buffer = &p_params[2];
+    params_middle_buffer = &p_params[1];
     new_data = 1;
 
     renderer->start_rendering();
@@ -44,6 +48,7 @@ int main(int argc, char **argv)
     if (audio_player.deinit_pa() != paNoError)
         return -1;
 
+    audio_viz.deinit();
     renderer->deinit();
 
     return 0;
