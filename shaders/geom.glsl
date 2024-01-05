@@ -4,20 +4,30 @@
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
-const float width = 1.0f / 256.0f;
-const vec4 width4 = vec4(width, 0.0f, 0.0f, 0.0f);
+uniform int size;
+uniform int width;
 
 void main()
 {
-
+	const float s = float(size);
+	const float w = float(width);
+	const float extend = (max(s , w) / (s*s)) * 0.25f;
+	
     gl_Position = gl_in[0].gl_Position;
+	gl_Position.x -= extend;
+	gl_Position.y += extend;
     EmitVertex();
-    gl_Position = gl_in[0].gl_Position + width4; 
+    gl_Position = gl_in[0].gl_Position;
+	gl_Position.x += extend;
+	gl_Position.y += extend;
     EmitVertex();
-    const vec4 vert = vec4(gl_in[0].gl_Position.x, 0.0f, 0.0f, 1.0f);
-    gl_Position = vert;
+    gl_Position = gl_in[0].gl_Position;
+	gl_Position.x -= extend;
+	gl_Position.y -= extend;
     EmitVertex();
-    gl_Position = vert + width4; 
+    gl_Position = gl_in[0].gl_Position;
+	gl_Position.x += extend;
+	gl_Position.y -= extend;
     EmitVertex();
 
     EndPrimitive();

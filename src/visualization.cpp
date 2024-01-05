@@ -13,7 +13,7 @@ bool visualizer::init_gl()
     window.initialise();
 
     // create shaders
-    if (!shader.load_shaders("../shaders/vert.glsl", "../shaders/frag.glsl"))// , "../shaders/geom.glsl"))
+    if (!shader.load_shaders("shaders/vert.glsl", "shaders/frag.glsl", "shaders/geom.glsl"))
         return false;
     
     if (!shader.validate_program())
@@ -44,7 +44,8 @@ void visualizer::run_gl()
         glClear(GL_COLOR_BUFFER_BIT);   
         // draw
         shader.use_program();
-        shader.set_uniform("width", FRAMES_PER_BUFFER); // maybe just set as a constant in the shader?
+        shader.set_uniform("size", FRAMES_PER_BUFFER); // maybe just set as a constant in the shader?
+        shader.set_uniform("width", window.get_buffer_width()); // maybe just set as a constant in the shader?
         glBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         viz_container* viz_data_front_buf_ptr = viz_data_buffer->consume();
