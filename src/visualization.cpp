@@ -20,6 +20,10 @@ bool visualizer::init_gl()
         return false;
 
 //----------------------------------------------------------------
+    shader.use_program();
+    shader.set_uniform("size", FRAMES_PER_BUFFER); // maybe just set as a constant in the shader?
+    glUseProgram(0);
+
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
