@@ -129,7 +129,7 @@ bool r_shader::check_compile_errors(GLuint shader) const
     {
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 		GLchar* error_log = (GLchar*)calloc(length, sizeof(char));
-        glGetShaderInfoLog(id, length, &length, error_log);
+        glGetShaderInfoLog(shader, length, &length, error_log);
 		printf("Error compiling shader: %s\n", error_log);
 		free(error_log);
     }
