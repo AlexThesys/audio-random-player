@@ -49,7 +49,7 @@ bool r_shader::load_shaders(const char* vs_file_path, const char* fs_file_path, 
     if (!check_link_errors())
         goto exit;
 
-    //get_attrib_info();
+    //get_attrib_info(); // no attributes
     //get_uniform_info();
 
 exit:

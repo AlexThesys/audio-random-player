@@ -14,15 +14,15 @@ class visualizer
     r_window window;
     r_shader shader;
     GLuint VAO;
-    GLuint VBO;
+    GLuint SSBO;
 
-    tripple_buffer<viz_container>* viz_data_buffer = nullptr;
+    tripple_buffer<viz_data>* viz_data_buffer = nullptr;
 
     std::atomic<int> state_render{1};
     std::thread render_thread;
 
 public:
-    void init(tripple_buffer<viz_container>* viz_buf);
+    void init(tripple_buffer<viz_data>* viz_buf);
     void deinit() 
     { 
         state_render.store(0); 

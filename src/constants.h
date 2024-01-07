@@ -4,9 +4,10 @@
 #define NUM_CHANNELS 2
 #define MAX_FILES 32
 #define FRAMES_PER_BUFFER 0x100
-#define VIZ_BUFFER_SIZE FRAMES_PER_BUFFER * NUM_CHANNELS
+#define VIZ_BUFFER_SIZE (FRAMES_PER_BUFFER * NUM_CHANNELS)
 #define MAX_VOLUME 1.0f
 #define FP_IN_VEC 4 // sizeof(__m128) / sizeof(float)
+#define S16_IN_VEC 8 // sizeof(__m128) / sizeof(int16_t)
 #define NUM_BUFFERS_POW_2 3
 #define NUM_FILES_POW_2 1
 

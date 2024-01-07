@@ -92,8 +92,15 @@ void user_params::get_user_params(play_params *data)
 
     while ((getchar()) != '\n'); // flush stdin
 
+    printf("\nEnable floating point visualization? [y/n]\t");
+    ch = static_cast<char>(getchar());
+    const bool enable_fp_viz = (ch == 'y' || ch == 'Y');
+    printf("%c\n", enable_fp_viz ? 'y' : 'n');
+
+    while ((getchar()) != '\n'); // flush stdin
+
     data->init(step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, lfo_freq, lfo_amount, use_lfo,
-               enable_dist);
+               enable_dist, enable_fp_viz);
 }
 
 void user_params::process_cmdline_args(int argc, char **argv, const char **res)

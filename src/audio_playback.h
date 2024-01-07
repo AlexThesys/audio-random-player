@@ -48,9 +48,10 @@ struct play_params
     float lfo_amount;
     bool use_lfo;
     bool waveshaper_enabled;
-    // padding 2 bytes
+    bool fp_visualization;
+    // padding 1 bytes
 
-    void init(int nsf, float pd, float vlb, float lfr, float lqr, float lf, float la, bool ul, bool we)
+    void init(int nsf, float pd, float vlb, float lfr, float lqr, float lf, float la, bool ul, bool we, bool fpv)
     {
         num_step_frames = nsf;
         pitch_deviation = pd;
@@ -61,6 +62,7 @@ struct play_params
         lfo_amount = la;
         use_lfo = ul;
         waveshaper_enabled = we;
+        fp_visualization = fpv;
     }
 };
 
@@ -119,7 +121,7 @@ class audio_renderer
     pa_data* data = nullptr;
     audio_streamer* streamer = nullptr;
     tripple_buffer<play_params> *params_buffer = nullptr;
-    tripple_buffer<viz_container> *viz_data_buffer = nullptr;
+    tripple_buffer<viz_data> *viz_data_buffer = nullptr;
     std::array<output_buffer_container, (1 << NUM_BUFFERS_POW_2)> buffers;
     size_t buffer_idx = 0;
     circular_buffer<output_buffer_container*, NUM_BUFFERS_POW_2> buffer_queue; // thread-safe
@@ -131,7 +133,7 @@ public:
     void deinit();
     pa_data* get_data() { return data; }
     tripple_buffer<play_params> *get_params_buffer() { return params_buffer; }
-    tripple_buffer<viz_container> *get_viz_data_buffer() { return viz_data_buffer; }
+    tripple_buffer<viz_data> *get_viz_data_buffer() { return viz_data_buffer; }
 
     static int fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
                             const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
@@ -142,8 +144,8 @@ private:
     void zero_out_viz_data()
     {
         for (int i = 0; i < 3; i++) {
-            viz_container *data = viz_data_buffer->get_data((size_t)i);
-            memset(data->data(), 0, sizeof(int16_t) * VIZ_BUFFER_SIZE);
+            viz_container &data = viz_data_buffer->get_data((size_t)i)->container;
+            memset(data.data(), 0, sizeof(int16_t) * VIZ_BUFFER_SIZE);
         }
     }
     void submit_viz_data(const output_buffer_container *output);

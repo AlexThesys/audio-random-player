@@ -4,8 +4,8 @@
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
-uniform int size;
 uniform int width;
+uniform int size;
 
 void main()
 {

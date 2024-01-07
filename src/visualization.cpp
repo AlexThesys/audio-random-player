@@ -25,17 +25,19 @@ bool visualizer::init_gl()
     glUseProgram(0);
 
     glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &SSBO);
 
     glBindVertexArray(VAO);
 
     //position
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, VIZ_BUFFER_SIZE * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 1, GL_FLOAT, 0, GL_FALSE, (void*)nullptr);
-    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), nullptr, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    const GLuint bind_point = 0u;
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bind_point, SSBO);
+    GLuint block_inndex = glGetUniformBlockIndex(shader.get_program_id(), "storage_block");
+    glUniformBlockBinding(shader.get_program_id(), block_inndex, bind_point);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     return true;
@@ -45,16 +47,20 @@ void visualizer::run_gl()
 {
     while(!window.get_should_close() && state_render.load())
     {
+        viz_data* viz_data_front_buf_ptr = viz_data_buffer->consume();
+        const bool fp_mode = viz_data_front_buf_ptr->fp_mode;
+        const size_t data_size = !fp_mode ? sizeof(int16_t) : sizeof(float);
         glClear(GL_COLOR_BUFFER_BIT);   
         // draw
         shader.use_program();
-        shader.set_uniform("size", FRAMES_PER_BUFFER); // maybe just set as a constant in the shader?
-        shader.set_uniform("width", window.get_buffer_width()); // maybe just set as a constant in the shader?
+        shader.set_uniform("width", window.get_buffer_width());
+        shader.set_uniform("fp_mode", fp_mode);
+
         glBindVertexArray(VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        viz_container* viz_data_front_buf_ptr = viz_data_buffer->consume();
-        glBufferSubData(GL_ARRAY_BUFFER, 0, VIZ_BUFFER_SIZE * sizeof(float), viz_data_front_buf_ptr->data());
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
+
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, VIZ_BUFFER_SIZE * data_size, viz_data_front_buf_ptr->container.data());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         glDrawArrays(GL_POINTS, 0, VIZ_BUFFER_SIZE);
         glBindVertexArray(0);
 
@@ -69,12 +75,12 @@ void visualizer::run_gl()
 void visualizer::deinit_gl()
 {
     glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &SSBO);
     shader.delete_shader();
     window.deinitialize();
 }
 
-void visualizer::init(tripple_buffer<viz_container>* viz_buf)
+void visualizer::init(tripple_buffer<viz_data>* viz_buf)
 {
     viz_data_buffer = viz_buf;
     render_thread = std::thread(render, this);

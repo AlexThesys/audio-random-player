@@ -152,7 +152,7 @@ bool audio_renderer::init(const char* folder_path, size_t* max_lenght_samples)
     data = new pa_data();
     streamer = new audio_streamer();
     params_buffer = new tripple_buffer<play_params>();
-    viz_data_buffer = new tripple_buffer<viz_container>();
+    viz_data_buffer = new tripple_buffer<viz_data>();
     if (!streamer->init(folder_path, max_lenght_samples)) {
         delete streamer;
         delete data;
@@ -218,8 +218,8 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
         memset(output_buffer, 0, buffer_size_bytes);
         // zero out viz_data - would be better to do this in audio render thread, not in audio callback
         auto* viz_data_buffer = renderer->get_viz_data_buffer();
-        viz_container* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
-        memset(viz_data_back_buffer_ptr->data(), 0, buffer_size_bytes);
+        viz_data* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
+        memset(viz_data_back_buffer_ptr->container.data(), 0, buffer_size_bytes);
         viz_data_buffer->publish();
     }
     return paContinue;
@@ -253,9 +253,43 @@ void audio_renderer::process_data()
 
 void audio_renderer::submit_viz_data(const output_buffer_container* output)
 {
-    constexpr size_t buffer_size_bytes = FRAMES_PER_BUFFER * NUM_CHANNELS * sizeof(float);
-    viz_container* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
-    memcpy(viz_data_back_buffer_ptr->data(), output->data(), buffer_size_bytes);
+    viz_data* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
+    viz_container& container = viz_data_back_buffer_ptr->container;
+    const bool fp_mode = data->uparams->fp_visualization;
+    if (!fp_mode) {
+        constexpr int container_size = FRAMES_PER_BUFFER * NUM_CHANNELS / S16_IN_VEC;
+        // default s16 visualization
+        constexpr int32_t delta = 0xFFFF;
+        const __m128 min_input = _mm_set1_ps(-1.0f);
+        const __m128 min_output = _mm_set1_ps(-32768.0f);
+        const __m128 delta_output = _mm_set1_ps((float)delta);
+        const __m128 denominator_rec = _mm_set1_ps(0.5f);
+
+        // convert float to s16
+        for (int i = 0, j = 0; i < container_size; i++, j += 2) {
+            const __m128 input_l = (*output)[j];
+            const __m128 input_r = (*output)[j + 1];
+
+            __m128 numerator = _mm_sub_ps(input_l, min_input);
+            __m128 division_result = _mm_mul_ps(numerator, denominator_rec);
+            __m128 multiplication_result = _mm_mul_ps(division_result, delta_output);
+            const __m128 result_l = _mm_add_ps(multiplication_result, min_output);
+
+            numerator = _mm_sub_ps(input_r, min_input);
+            division_result = _mm_mul_ps(numerator, denominator_rec);
+            multiplication_result = _mm_mul_ps(division_result, delta_output);
+            const __m128 result_r = _mm_add_ps(multiplication_result, min_output);
+
+            // Convert the result to short integers
+            const __m128i result_l_int = _mm_cvtps_epi32(result_l);
+            const __m128i result_r_int = _mm_cvtps_epi32(result_r);
+            container[i] = _mm_packs_epi32(result_l_int, result_r_int);
+        }
+    } else {
+        constexpr size_t buffer_size_bytes = FRAMES_PER_BUFFER * NUM_CHANNELS * sizeof(float);
+        memcpy(container.data(), output->data(), buffer_size_bytes);
+    }
+    viz_data_back_buffer_ptr->fp_mode = fp_mode;
     viz_data_buffer->publish();
 }
 

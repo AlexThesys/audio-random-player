@@ -7,7 +7,12 @@
 using audio_file_container = std::array<AudioFile<float>, (1 << NUM_FILES_POW_2)>;
 using buffer_container = std::array<std::vector<__m128>, NUM_CHANNELS>;
 using output_buffer_container = std::vector<__m128>;
-using viz_container = std::array<__m128i, FRAMES_PER_BUFFER * NUM_CHANNELS / FP_IN_VEC>;
+using viz_container = std::array<__m128i, FRAMES_PER_BUFFER * NUM_CHANNELS / FP_IN_VEC>; // big enough size is required to fit either s16 or floats
+
+struct viz_data {
+    viz_container container;
+    bool fp_mode = false;
+};
 
 #define verify_pa_no_error_verbose(err)\
 if( (err) != paNoError ) {\
@@ -23,4 +28,8 @@ int clamp_input(T val, T min, T max)
 {
     val = _min(val, max);
     return _max(val, min);
+}
+
+inline bool fp_similar(float x, float y, float eps = 0.0001f) {
+    return (fabs(x) - fabs(y)) < eps;
 }
