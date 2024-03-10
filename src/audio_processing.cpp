@@ -21,6 +21,9 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
     dest[0] = (float *)destination[0].data();
     dest[1] = (float *)destination[1].data();
     size_t frames_read = in_samples;
+
+    PROFILE_START("resample");
+
     if (in_samples == out_samples) {
         // common case - just copy and attenuate
         for (size_t ch = 0; ch < num_ch; ch++) {
@@ -57,6 +60,9 @@ size_t resample(const AudioFile<float>::AudioBuffer &source, buffer_container &d
             }
         }
     }
+
+    PROFILE_STOP("resample");
+
     return frames_read;
 }
 

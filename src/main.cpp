@@ -10,6 +10,8 @@
 
 int main(int argc, char **argv)
 {
+    PROFILE_SET_TREAD_NAME("Main/User");
+
     int ret = 0;
     if (std::thread::hardware_concurrency() < 2) {
         puts("The application is not meant to be run on a single core system...exiting.");

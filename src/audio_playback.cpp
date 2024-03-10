@@ -196,6 +196,9 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
                                         const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
                                         void* user_data)
 {
+    PROFILE_SET_TREAD_NAME("Audio/Submit");
+
+
     PROFILE_FRAME_START("Audio");
     PROFILE_START("audio_renderer::fill_output_buffer");
     //assert(FRAMES_PER_BUFFER == framesPerBuffer);
@@ -233,6 +236,8 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
 
 void audio_renderer::render(void* arg)
 {
+    PROFILE_SET_TREAD_NAME("Audio/Render");
+
     audio_renderer &renderer = *(audio_renderer*)arg;
     static const auto mcs = std::chrono::microseconds(1000);
     while (renderer.state_render.load()) {
@@ -262,6 +267,8 @@ void audio_renderer::process_data()
 
 void audio_renderer::submit_viz_data(const output_buffer_container* output)
 {
+    PROFILE_START("audio_renderer::submit_viz_data");
+
     viz_data* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
     viz_container& container = viz_data_back_buffer_ptr->container;
     const bool fp_mode = data->uparams->fp_visualization;
@@ -300,6 +307,8 @@ void audio_renderer::submit_viz_data(const output_buffer_container* output)
     }
     viz_data_back_buffer_ptr->fp_mode = fp_mode;
     viz_data_buffer->publish();
+
+    PROFILE_STOP("audio_renderer::submit_viz_data");
 }
 
 bool audio_streamer::init(const char* folder_path, size_t* max_lenght_samples)
@@ -339,6 +348,8 @@ AudioFile<float>* audio_streamer::request()
 
 void audio_streamer::stream(void* arg)
 {
+    PROFILE_SET_TREAD_NAME("Audio/Streamer");
+
     audio_streamer* streamer = (audio_streamer*)arg;
 
     while (streamer->state_streaming.load()) {

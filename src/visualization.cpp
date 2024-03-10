@@ -48,6 +48,8 @@ bool visualizer::init_gl()
 
 void visualizer::run_gl()
 {
+    PROFILE_SET_TREAD_NAME("Graphics/Render");
+
     const std::chrono::microseconds frame_time(TARGET_FPS_mcs);
     auto prev_tm = std::chrono::high_resolution_clock::now();
     while(!window.get_should_close() && state_render.load())
@@ -57,7 +59,9 @@ void visualizer::run_gl()
         if (duration.count() < TARGET_FPS_mcs) {
             std::this_thread::sleep_for(frame_time - duration);
         }
+
         PROFILE_START("visualizer::run_gl");
+
         prev_tm = curr_tm;
 
         viz_data* viz_data_front_buf_ptr = viz_data_buffer->consume();
