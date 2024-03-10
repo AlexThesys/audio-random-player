@@ -6,6 +6,7 @@
 
 #include "user_input.h"
 #include "visualization.h"
+#include "profiling.h"
 
 int main(int argc, char **argv)
 {

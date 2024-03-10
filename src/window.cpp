@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "profiling.h"
 
 int r_window::initialise(bool full_screen) {
 	glfwInit();

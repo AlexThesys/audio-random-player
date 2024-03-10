@@ -6,6 +6,7 @@
 #include "AudioFile.h"
 #include "visualization.h"
 #include "constants.h"
+#include "profiling.h"
 
 bool visualizer::init_gl()
 {
@@ -69,6 +70,8 @@ void visualizer::run_gl()
         window.swap_buffers();
         // process input
         glfwPollEvents();
+
+        PROFILE_FRAME("Render");
     }
 }
 

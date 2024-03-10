@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "user_input.h"
 #include "utils.h"
+#include "profiling.h"
 
 extern volatile play_params *params_middle_buffer;
 extern volatile LONG new_data;

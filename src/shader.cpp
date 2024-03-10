@@ -2,7 +2,7 @@
 
 #include <cstdio>
 #include <cstdlib>
-
+#include "profiling.h"
 
 bool r_shader::load_shaders(const char* vs_file_path, const char* fs_file_path, const char* gs_file_path)
 {

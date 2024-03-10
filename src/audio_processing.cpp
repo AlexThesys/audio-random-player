@@ -1,4 +1,5 @@
 #include "audio_processing.h"
+#include "profiling.h"
 
 inline void apply_fadeout(float *dest, size_t out_samples)
 {

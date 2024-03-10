@@ -2,6 +2,7 @@
 #include <emmintrin.h>
 
 #include "dsp.h"
+#include "profiling.h"
 
 namespace dsp
 {
