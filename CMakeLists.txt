@@ -7,6 +7,8 @@ option( TRACY_ENABLE "" ON)
 option( TRACY_ON_DEMAND "" ON)
 add_subdirectory (tracy) # target: TracyClient or alias Tracy :: TracyClient
 
+#option( PROFILER_ENABLED "" ON)
+
 include_directories("portaudio/include")
 include_directories("AudioFile")
 include_directories("glm")

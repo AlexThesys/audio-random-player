@@ -197,7 +197,7 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
                                         void* user_data)
 {
     PROFILE_FRAME_START("Audio");
-
+    PROFILE_START("audio_renderer::fill_output_buffer");
     //assert(FRAMES_PER_BUFFER == framesPerBuffer);
     if (FRAMES_PER_BUFFER != frames_per_buffer) {
         return paAbort;
@@ -225,7 +225,7 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
         memset(viz_data_back_buffer_ptr->container.data(), 0, buffer_size_bytes);
         viz_data_buffer->publish();
     }
-
+    PROFILE_STOP("audio_renderer::fill_output_buffer");
     PROFILE_FRAME_STOP("Audio");
 
     return paContinue;
@@ -246,6 +246,7 @@ void audio_renderer::render(void* arg)
 
 void audio_renderer::process_data()
 {
+    PROFILE_START("audio_renderer::process_data");
     if (!data->p_data.frame_counter) {
         data->p_data.audio_file = streamer->request();
         assert(data->p_data.audio_file);
@@ -256,6 +257,7 @@ void audio_renderer::process_data()
     bool res = buffer_queue.try_push(output); res;
     assert(res);
     buffer_idx = ++buffer_idx & (buffers.size() - 1);
+    PROFILE_STOP("audio_renderer::process_data");
 }
 
 void audio_renderer::submit_viz_data(const output_buffer_container* output)
@@ -360,12 +362,15 @@ size_t audio_streamer::get_rnd_file_id()
 
 void audio_streamer::load_file() 
 {
+    PROFILE_START("audio_streamer::load_file");
     AudioFile<float>& audio_file = audio_files[buffer_idx];
     const size_t file_id = get_rnd_file_id();
     const bool res = audio_file.load(file_names[file_id]); res;
     assert(res);
     file_queue.try_push(&audio_file);
     buffer_idx = ++buffer_idx & (audio_files.size() - 1);
+    PROFILE_STOP("audio_streamer::load_file");
+
 }
 
 bool audio_streamer::load_file_names(const char* folder_path, size_t* max_lenght_samples)

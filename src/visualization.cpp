@@ -1,3 +1,5 @@
+#include <chrono>
+
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -46,8 +48,18 @@ bool visualizer::init_gl()
 
 void visualizer::run_gl()
 {
+    const std::chrono::microseconds frame_time(TARGET_FPS_mcs);
+    auto prev_tm = std::chrono::high_resolution_clock::now();
     while(!window.get_should_close() && state_render.load())
     {
+        const auto curr_tm = std::chrono::high_resolution_clock::now();
+        const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(curr_tm - prev_tm);
+        if (duration.count() < TARGET_FPS_mcs) {
+            std::this_thread::sleep_for(frame_time - duration);
+        }
+        PROFILE_START("visualizer::run_gl");
+        prev_tm = curr_tm;
+
         viz_data* viz_data_front_buf_ptr = viz_data_buffer->consume();
         const bool fp_mode = viz_data_front_buf_ptr->fp_mode;
         const size_t data_size = !fp_mode ? sizeof(int16_t) : sizeof(float);
@@ -72,6 +84,7 @@ void visualizer::run_gl()
         glfwPollEvents();
 
         PROFILE_FRAME("Render");
+        PROFILE_STOP("visualizer::run_gl");
     }
 }
 

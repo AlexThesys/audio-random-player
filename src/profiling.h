@@ -2,11 +2,11 @@
 
 #include "Tracy.hpp"
 
-#ifdef NDEBUG
-#define USE_PROFILER
+#ifndef NDEBUG
+#undef PROFILER_ENABLED
 #endif // NDEBUG
 
-#ifdef USE_PROFILER
+#ifdef PROFILER_ENABLED
 #define PROFILE_START(name) { \
 ZoneScopedN((name))
 #define PROFILE_STOP }
