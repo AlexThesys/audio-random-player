@@ -15,7 +15,7 @@ static dsp::modulation::lfo lfo_gen{&w_table};
 
 static inline float semitones_to_pitch_scale(float semitones_dev)
 {
-    const float semitones = random_gen.f(-semitones_dev, semitones_dev);
+    const float semitones = random_gen.fp(-semitones_dev, semitones_dev);
     return powf(2.0f, semitones / 12.0f);
 }
 
@@ -23,9 +23,9 @@ void pa_data::randomize_data(play_params* params_front_buffer)
 {
     uparams = params_front_buffer;
     p_data.pitch = semitones_to_pitch_scale(params_front_buffer->pitch_deviation);
-    p_data.volume = random_gen.f(params_front_buffer->volume_lower_bound, MAX_VOLUME);
-    const float lpf_freq = random_gen.f(MAX_LPF_FREQ - params_front_buffer->lpf_freq_range, MAX_LPF_FREQ);
-    const float lpf_q = random_gen.f(DEFAULT_LPF_Q, DEFAULT_LPF_Q + params_front_buffer->lpf_q_range);
+    p_data.volume = random_gen.fp(params_front_buffer->volume_lower_bound, MAX_VOLUME);
+    const float lpf_freq = random_gen.fp(MAX_LPF_FREQ - params_front_buffer->lpf_freq_range, MAX_LPF_FREQ);
+    const float lpf_q = random_gen.fp(DEFAULT_LPF_Q, DEFAULT_LPF_Q + params_front_buffer->lpf_q_range);
     lp_filter.setup(lpf_freq, lpf_q);
     p_data.num_step_frames = params_front_buffer->num_step_frames;
     if (params_front_buffer->use_lfo)

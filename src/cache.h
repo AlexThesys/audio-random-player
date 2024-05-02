@@ -1,23 +1,27 @@
 #pragma once
 
+#include <type_traits>
+
 #include "librandom.h"
 
-template <typename holder_t = uint32_t> 
+template <typename T = uint32_t> 
 struct cache_t
 {
+    static_assert(std::is_integral_v<T>, "Unsupported type!");
+
   public:
-    inline cache_t(const holder_t v = 0) : _cache(v)
+    inline cache_t(const T v = 0) : _cache(v)
     {
     }
 
   public:
-    inline holder_t value() const
+    inline T value() const
     {
         return _cache;
     }
 
   public:
-    inline holder_t check(holder_t idx, const uint8_t size)
+    inline T check(T idx, const uint8_t size)
     {
         check_all(size);
         while (!check_cache(static_cast<uint8_t>(idx), size)) {
@@ -31,8 +35,8 @@ struct cache_t
   public:
     inline int check_all(const uint8_t size)
     {
-        const holder_t nall = static_cast<holder_t>((uint64_t(-1) << size));
-        const holder_t all = ~nall;            
+        const T nall = static_cast<T>((uint64_t(-1) << size));
+        const T all = ~nall;            
         if ((all & _cache) != all) 
             return (false);
         _cache &= nall;
@@ -40,15 +44,15 @@ struct cache_t
     }
     inline int check_cache(const uint8_t idx, const uint8_t size)
     {
-        const holder_t mask =
-            (static_cast<holder_t>((uint64_t(1) << idx)) & ~(static_cast<holder_t>(uint64_t(-1) << size)));
+        const T mask =
+            (static_cast<T>((uint64_t(1) << idx)) & ~(static_cast<T>(uint64_t(-1) << size)));
         if (_cache & mask)
             return (false);
         _cache |= mask;
         return (true);
     }
 private:
-    holder_t _cache;
+    T _cache;
 };
 
 typedef cache_t<uint32_t> cache;

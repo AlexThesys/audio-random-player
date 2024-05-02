@@ -9,10 +9,10 @@ namespace librandom
 class randu
 {
   private:
-    volatile int64_t holdrand;
+    volatile int64_t _rnd;
 
   public:
-    inline randu(const int64_t _seed = 1) : holdrand(_seed)
+    inline randu(const int64_t _seed = 1) : _rnd(_seed)
     {
     }
 
@@ -24,11 +24,11 @@ class randu
 
     inline void seed(const int64_t val)
     {
-        holdrand = val;
+        _rnd = val;
     }
     inline int64_t seed() const
     {
-        return holdrand;
+        return _rnd;
     }
     inline int32_t max_i() const
     {
@@ -37,7 +37,7 @@ class randu
 
     inline int32_t i()
     {
-        return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7fff);
+        return (((_rnd = _rnd * 214013L + 2531011L) >> 16) & 0x7fff);
     }
 
     inline int32_t i(int32_t max)
@@ -58,29 +58,29 @@ class randu
         return offs + is(range);
     }
 
-    inline float max_f()
+    inline float max_fp()
     {
         return 32767.f;
     }
-    inline float f()
+    inline float fp()
     {
-        return float(i()) / max_f();
+        return float(i()) / max_fp();
     }
-    inline float f(float max)
+    inline float fp(float max)
     {
-        return f() * max;
+        return fp() * max;
     }
-    inline float f(float min, float max)
+    inline float fp(float min, float max)
     {
-        return min + f(max - min);
+        return min + fp(max - min);
     }
-    inline float fs(float range)
+    inline float fp_s(float range)
     {
-        return f(-range, range);
+        return fp(-range, range);
     }
-    inline float fs(float range, float offs)
+    inline float fp_s(float range, float offs)
     {
-        return offs + fs(range);
+        return offs + fp_s(range);
     }
 };
 } // namespace librandom

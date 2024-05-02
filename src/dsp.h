@@ -106,7 +106,7 @@ struct low_pass
         assert(ch < num_channels);
         while (frames--) {
             calc_t in = calc_t(*dest);
-            in = processI(in, ch);
+            in = process(in, ch);
             *dest++ = float(in);
         }
     }
@@ -122,7 +122,7 @@ private:
         b12a01.data[0] = b1 * inv_a0;
         b12a01.data[1] = b2 * inv_a0;
     }
-    inline calc_t processI(calc_t in, int ch = 0)
+    inline calc_t process(calc_t in, int ch = 0)
     {
         assert(ch < num_channels);
         float out = pad * in + b12a01._dot4(h0123[ch]);
