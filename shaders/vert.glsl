@@ -3,7 +3,7 @@
 
 #define s16_min (-32768.0f)
 #define s16_max 32767.0f
-#define s16_range (s16_max - s16_min)
+#define conversion_factor (2.0f / (s16_max - s16_min))
 #define s16_mask 0xFFFF
 #define s16_bits 0x10
 
@@ -18,7 +18,7 @@ uniform int size;
 float s16_to_float(int val_packed, int selector)
 {
 	const int val = (val_packed >> (selector * s16_bits)) & s16_mask;
-	return ((float(val) - s16_min) / s16_range) * 2.0f - 1.0f;
+	return ((float(val) - s16_min) * conversion_factor) - 1.0f;
 }
 
 void main()

@@ -277,11 +277,10 @@ void audio_renderer::submit_viz_data(const output_buffer_container* output)
         // default s16 visualization
         constexpr float s16_min = -32768.0f;
         constexpr float s16_max = 32767.0f;
-        constexpr float range = s16_max - s16_min;
+        constexpr float conv_factor = (s16_max - s16_min) * 0.5f;
         const __m128 min_input = _mm_set1_ps(-1.0f);
         const __m128 min_output = _mm_set1_ps(s16_min);
-        const __m128 range_output = _mm_set1_ps(range);
-        const __m128 denominator_rec = _mm_set1_ps(0.5f);
+        const __m128 conversion_factor = _mm_set1_ps(conv_factor);
 
         // convert float to s16
         for (int i = 0, j = 0; i < container_size; i++, j += 2) {
@@ -289,14 +288,12 @@ void audio_renderer::submit_viz_data(const output_buffer_container* output)
             const __m128 input_1 = (*output)[j + 1];
 
             __m128 numerator = _mm_sub_ps(input_0, min_input);
-            __m128 division_result = _mm_mul_ps(numerator, denominator_rec);
-            __m128 multiplication_result = _mm_mul_ps(division_result, range_output);
-            const __m128 result_0 = _mm_add_ps(multiplication_result, min_output);
+            __m128 scaled_result = _mm_mul_ps(numerator, conversion_factor);
+            const __m128 result_0 = _mm_add_ps(scaled_result, min_output);
 
             numerator = _mm_sub_ps(input_1, min_input);
-            division_result = _mm_mul_ps(numerator, denominator_rec);
-            multiplication_result = _mm_mul_ps(division_result, range_output);
-            const __m128 result_1 = _mm_add_ps(multiplication_result, min_output);
+            scaled_result = _mm_mul_ps(numerator, conversion_factor);
+            const __m128 result_1 = _mm_add_ps(scaled_result, min_output);
 
             // Convert the result to short integers
             const __m128i result_0_int = _mm_cvtps_epi32(result_0);
