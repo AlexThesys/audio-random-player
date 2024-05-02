@@ -277,10 +277,10 @@ void audio_renderer::submit_viz_data(const output_buffer_container* output)
         // default s16 visualization
         constexpr float s16_min = -32768.0f;
         constexpr float s16_max = 32767.0f;
-        constexpr float delta = s16_max - s16_min;
+        constexpr float range = s16_max - s16_min;
         const __m128 min_input = _mm_set1_ps(-1.0f);
         const __m128 min_output = _mm_set1_ps(s16_min);
-        const __m128 delta_output = _mm_set1_ps(delta);
+        const __m128 range_output = _mm_set1_ps(range);
         const __m128 denominator_rec = _mm_set1_ps(0.5f);
 
         // convert float to s16
@@ -290,12 +290,12 @@ void audio_renderer::submit_viz_data(const output_buffer_container* output)
 
             __m128 numerator = _mm_sub_ps(input_0, min_input);
             __m128 division_result = _mm_mul_ps(numerator, denominator_rec);
-            __m128 multiplication_result = _mm_mul_ps(division_result, delta_output);
+            __m128 multiplication_result = _mm_mul_ps(division_result, range_output);
             const __m128 result_0 = _mm_add_ps(multiplication_result, min_output);
 
             numerator = _mm_sub_ps(input_1, min_input);
             division_result = _mm_mul_ps(numerator, denominator_rec);
-            multiplication_result = _mm_mul_ps(division_result, delta_output);
+            multiplication_result = _mm_mul_ps(division_result, range_output);
             const __m128 result_1 = _mm_add_ps(multiplication_result, min_output);
 
             // Convert the result to short integers
