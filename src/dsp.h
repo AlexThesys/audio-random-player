@@ -44,7 +44,7 @@ inline float hadd_sse(const __m128 &accum)
     return _mm_cvtss_f32(sums);
 }
 
-typedef float CalcT;
+typedef float calc_t;
 
 namespace biquad
 {
@@ -54,20 +54,21 @@ struct vec
         __m128 m;
         alignas(16) float data[FP_IN_VEC];
     };
-    CalcT _dot(vec other)
+    calc_t _dot(vec other)
     {
         return this->data[0] * other.data[0] + this->data[1] * other.data[1] + this->data[2] * other.data[2] +
                this->data[3] * other.data[3];
     }
-    CalcT _dot4(vec other)
+    calc_t _dot4(vec other)
     {
         other.m = _mm_mul_ps(this->m, other.m);
         return hadd_sse(other.m);
     }
 };
 
+//	Biquad Second Order IIR Low pass Filter
 template <int num_channels> 
-struct filter_base
+struct low_pass
 {
     vec b12a01;
     vec h0123[num_channels];
@@ -75,7 +76,7 @@ struct filter_base
     // padding 12 bytes
 
   public:
-    filter_base()
+    low_pass()
     {
         clear();
     }
@@ -83,9 +84,37 @@ struct filter_base
     {
         memset(h0123, 0, sizeof(h0123));
     }
-    inline void setup(CalcT a0, CalcT a1, CalcT a2, CalcT b0, CalcT b1, CalcT b2)
+    inline void setup(calc_t normFreq, calc_t q)
     {
-        CalcT inv_a0 = 1.f / a0;
+        calc_t w0 = calc_t(2.0) * PI * normFreq;
+        calc_t cs = cos(w0);
+        calc_t sn = sin(w0);
+        calc_t ncs = calc_t(1.0) - cs;
+
+        calc_t alph = sn / (calc_t(2.0) * q);
+        calc_t b0 = ncs * calc_t(0.5);
+        calc_t b1 = ncs;
+        calc_t b2 = b0;
+        calc_t a0 = calc_t(1.0) + alph;
+        calc_t a1 = -calc_t(2.0) * cs;
+        calc_t a2 = calc_t(1.0) - alph;
+
+        setup(a0, a1, a2, b0, b1, b2);
+    }
+    inline void process(size_t frames, float *dest, int ch = 0)
+    {
+        assert(ch < num_channels);
+        while (frames--) {
+            calc_t in = calc_t(*dest);
+            in = processI(in, ch);
+            *dest++ = float(in);
+        }
+    }
+
+private:
+    inline void setup(calc_t a0, calc_t a1, calc_t a2, calc_t b0, calc_t b1, calc_t b2)
+    {
+        calc_t inv_a0 = 1.f / a0;
 
         b12a01.data[2] = -a1 * inv_a0;
         b12a01.data[3] = -a2 * inv_a0;
@@ -93,61 +122,16 @@ struct filter_base
         b12a01.data[0] = b1 * inv_a0;
         b12a01.data[1] = b2 * inv_a0;
     }
-
-    inline CalcT processI(CalcT in, int ch = 0)
+    inline calc_t processI(calc_t in, int ch = 0)
     {
         assert(ch < num_channels);
-        if (0) {
-            CalcT out = pad * in + b12a01.data[0] * h0123[ch].data[0] + b12a01.data[1] * h0123[ch].data[1] +
-                        b12a01.data[2] * h0123[ch].data[2] + b12a01.data[3] * h0123[ch].data[3];
-            h0123[ch].data[1] = h0123[ch].data[0];
-            h0123[ch].data[0] = in;
-            h0123[ch].data[3] = h0123[ch].data[2];
-            h0123[ch].data[2] = out;
-            return out;
-        } else {
+        float out = pad * in + b12a01._dot4(h0123[ch]);
 
-            float out = pad * in + b12a01._dot4(h0123[ch]);
+        __m128 io = _mm_unpacklo_ps(_mm_set_ss(in), _mm_set_ss(out));
+        __m128 h0h2 = _mm_shuffle_ps(h0123[ch].m, h0123[ch].m, _MM_SHUFFLE(2, 0, 2, 0));
+        h0123[ch].m = _mm_unpacklo_ps(io, h0h2);
 
-            __m128 io = _mm_unpacklo_ps(_mm_set_ss(in), _mm_set_ss(out));
-            __m128 h0h2 = _mm_shuffle_ps(h0123[ch].m, h0123[ch].m, _MM_SHUFFLE(2, 0, 2, 0));
-            h0123[ch].m = _mm_unpacklo_ps(io, h0h2);
-
-            return out;
-        }
-    }
-
-    inline void process(size_t frames, float *dest, int ch = 0)
-    {
-        assert(ch < num_channels);
-        while (frames--) {
-            CalcT in = CalcT(*dest);
-            in = processI(in, ch);
-            *dest++ = float(in);
-        }
-    }
-};
-
-//	Biquad Second Order IIR Low pass Filter
-template <int num_channels> 
-struct low_pass : public filter_base<num_channels>
-{
-    inline void setup(CalcT normFreq, CalcT q)
-    {
-        CalcT w0 = CalcT(2.0) * PI * normFreq;
-        CalcT cs = cos(w0);
-        CalcT sn = sin(w0);
-        CalcT ncs = CalcT(1.0) - cs;
-
-        CalcT alph = sn / (CalcT(2.0) * q);
-        CalcT b0 = ncs * CalcT(0.5);
-        CalcT b1 = ncs;
-        CalcT b2 = b0;
-        CalcT a0 = CalcT(1.0) + alph;
-        CalcT a1 = -CalcT(2.0) * cs;
-        CalcT a2 = CalcT(1.0) - alph;
-
-        filter_base<num_channels>::setup(a0, a1, a2, b0, b1, b2);
+        return out;
     }
 };
 } // namespace biquad

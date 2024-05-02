@@ -5,22 +5,22 @@
 
 namespace librandom
 {
-
-class simple
+// randu algorithm
+class randu
 {
   private:
     volatile int64_t holdrand;
 
   public:
-    inline simple(const int64_t _seed = 1) : holdrand(_seed)
+    inline randu(const int64_t _seed = 1) : holdrand(_seed)
     {
     }
 
     // C5220
-    simple(const simple &) = delete;
-    simple &operator=(const simple &) = delete;
-    simple(simple &&) = delete;
-    simple &operator=(simple &&) = delete;
+    randu(const randu&) = delete;
+    randu&operator=(const randu&) = delete;
+    randu(randu&&) = delete;
+    randu &operator=(randu&&) = delete;
 
     inline void seed(const int64_t val)
     {

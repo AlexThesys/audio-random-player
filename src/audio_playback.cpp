@@ -8,7 +8,7 @@
 
 #define PA_SAMPLE_TYPE paFloat32
 
-static librandom::simple random_gen;
+static librandom::randu random_gen;
 static dsp::filter lp_filter;
 static const dsp::modulation::wavetable w_table;
 static dsp::modulation::lfo lfo_gen{&w_table};
