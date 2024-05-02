@@ -15,16 +15,16 @@ int main(int argc, char **argv)
     int ret = 0;
     if (std::thread::hardware_concurrency() < 2) {
         puts("The application is not meant to be run on a single core system...exiting.");
-        return ret;
+        return 1;
     }
 
-    const char *folder_path = "audio_data";
     user_params uparams;
-    uparams.process_cmdline_args(argc, argv, &folder_path);
+    uparams.process_cmdline_args(argc, argv);
+    uparams.get_folder_path();
 
     std::unique_ptr<audio_renderer> renderer = std::make_unique<audio_renderer>();
 
-    if (!renderer->init(folder_path, &uparams.max_lenght_samples)) {
+    if (!renderer->init(uparams.folder_path, &uparams.max_lenght_samples)) {
         puts("Error loading files...exiting.");
         return -1;
     }

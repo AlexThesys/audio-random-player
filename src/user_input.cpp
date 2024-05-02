@@ -7,6 +7,8 @@
 #include "utils.h"
 #include "profiling.h"
 
+#define MAX_INPUT_ARGS 2
+
 extern volatile play_params *params_middle_buffer;
 extern volatile LONG new_data;
 
@@ -33,7 +35,7 @@ static int get_input(int default_value)
 {
     char line[4];
     memset(line, 0, sizeof(line));
-    scanf_s("%s", line, static_cast<unsigned int>(_countof(line)));
+    scanf_s("%s", line, static_cast<unsigned int>(sizeof(line)));
     char *end;
     long l = strtol((const char *)line, &end, (int)10); // C6054 is unfair
     if (end == line || end[0] != '\0') {
@@ -41,6 +43,16 @@ static int get_input(int default_value)
     }
     return (int)l;
 }
+
+bool user_params::get_folder_path() {
+    bool res = false;
+    memset(folder_path, 0, sizeof(folder_path));
+
+    puts("Input full path to the folder with the audio files (no whitespace permitted):");
+    res = !!scanf_s("%s", folder_path, static_cast<unsigned int>(sizeof(folder_path)));
+
+    return res;
+} 
 
 void user_params::get_user_params(play_params *data)
 {
@@ -104,16 +116,11 @@ void user_params::get_user_params(play_params *data)
                enable_dist, enable_fp_viz);
 }
 
-void user_params::process_cmdline_args(int argc, char **argv, const char **res)
+void user_params::process_cmdline_args(int argc, char **argv)
 {
-    bool nofade;
-    for (int i = 1, sz = _min(argc, 3); i < sz; i++) {
-        nofade = !strcmp(argv[i], "--no-fadeout");
-        if (!nofade) {
-            *res = argv[i];
-        } else {
-            disable_fadeout = nofade;
-        }
+    for (int i = 1, sz = _min(argc, MAX_INPUT_ARGS); i < sz; i++) {
+        disable_fadeout = !strcmp(argv[i], "--no-fadeout");
+        // ...
     }
 }
 
