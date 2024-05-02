@@ -275,31 +275,34 @@ void audio_renderer::submit_viz_data(const output_buffer_container* output)
     if (!fp_mode) {
         constexpr int container_size = FRAMES_PER_BUFFER * NUM_CHANNELS / S16_IN_VEC;
         // default s16 visualization
-        constexpr int32_t delta = 0xFFFF;
+        constexpr float s16_min = -32768.0f;
+        constexpr float s16_max = 32767.0f;
+        constexpr float delta = s16_max - s16_min;
         const __m128 min_input = _mm_set1_ps(-1.0f);
-        const __m128 min_output = _mm_set1_ps(-32768.0f);
-        const __m128 delta_output = _mm_set1_ps((float)delta);
+        const __m128 min_output = _mm_set1_ps(s16_min);
+        const __m128 delta_output = _mm_set1_ps(delta);
         const __m128 denominator_rec = _mm_set1_ps(0.5f);
 
         // convert float to s16
         for (int i = 0, j = 0; i < container_size; i++, j += 2) {
-            const __m128 input_l = (*output)[j];
-            const __m128 input_r = (*output)[j + 1];
+            const __m128 input_0 = (*output)[j];
+            const __m128 input_1 = (*output)[j + 1];
 
-            __m128 numerator = _mm_sub_ps(input_l, min_input);
+            __m128 numerator = _mm_sub_ps(input_0, min_input);
             __m128 division_result = _mm_mul_ps(numerator, denominator_rec);
             __m128 multiplication_result = _mm_mul_ps(division_result, delta_output);
-            const __m128 result_l = _mm_add_ps(multiplication_result, min_output);
+            const __m128 result_0 = _mm_add_ps(multiplication_result, min_output);
 
-            numerator = _mm_sub_ps(input_r, min_input);
+            numerator = _mm_sub_ps(input_1, min_input);
             division_result = _mm_mul_ps(numerator, denominator_rec);
             multiplication_result = _mm_mul_ps(division_result, delta_output);
-            const __m128 result_r = _mm_add_ps(multiplication_result, min_output);
+            const __m128 result_1 = _mm_add_ps(multiplication_result, min_output);
 
             // Convert the result to short integers
-            const __m128i result_l_int = _mm_cvtps_epi32(result_l);
-            const __m128i result_r_int = _mm_cvtps_epi32(result_r);
-            container[i] = _mm_packs_epi32(result_l_int, result_r_int);
+            const __m128i result_0_int = _mm_cvtps_epi32(result_0);
+            const __m128i result_1_int = _mm_cvtps_epi32(result_1);
+            // low 4 words - from result_0_int, high 4 words - from result_1_int
+            container[i] = _mm_packs_epi32(result_0_int, result_1_int);
         }
     } else {
         constexpr size_t buffer_size_bytes = FRAMES_PER_BUFFER * NUM_CHANNELS * sizeof(float);
