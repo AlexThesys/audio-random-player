@@ -273,31 +273,32 @@ void audio_renderer::submit_viz_data(const output_buffer_container* output)
     viz_container& container = viz_data_back_buffer_ptr->container;
     const bool fp_mode = data->uparams->fp_visualization;
     if (!fp_mode) {
-        constexpr int container_size = FRAMES_PER_BUFFER * NUM_CHANNELS / S16_IN_VEC;
+        constexpr size_t container_size = FRAMES_PER_BUFFER * NUM_CHANNELS / S16_IN_VEC;
         // default s16 visualization
         constexpr float s16_min = -32768.0f;
         constexpr float s16_max = 32767.0f;
         constexpr float conv_factor = (s16_max - s16_min) * 0.5f;
-        const __m128 min_input = _mm_set1_ps(-1.0f);
+        const __m128 min_input = _mm_set1_ps(1.0f);
         const __m128 min_output = _mm_set1_ps(s16_min);
         const __m128 conversion_factor = _mm_set1_ps(conv_factor);
 
         // convert float to s16
-        for (int i = 0, j = 0; i < container_size; i++, j += 2) {
+        for (size_t i = 0, j = 0; i < container_size; i++, j += 2) {
             const __m128 input_0 = (*output)[j];
             const __m128 input_1 = (*output)[j + 1];
 
-            __m128 numerator = _mm_sub_ps(input_0, min_input);
+            __m128 numerator = _mm_add_ps(input_0, min_input);
             __m128 scaled_result = _mm_mul_ps(numerator, conversion_factor);
             const __m128 result_0 = _mm_add_ps(scaled_result, min_output);
 
-            numerator = _mm_sub_ps(input_1, min_input);
+            numerator = _mm_add_ps(input_1, min_input);
             scaled_result = _mm_mul_ps(numerator, conversion_factor);
             const __m128 result_1 = _mm_add_ps(scaled_result, min_output);
 
             // Convert the result to short integers
             const __m128i result_0_int = _mm_cvtps_epi32(result_0);
             const __m128i result_1_int = _mm_cvtps_epi32(result_1);
+
             // low 4 words - from result_0_int, high 4 words - from result_1_int
             container[i] = _mm_packs_epi32(result_0_int, result_1_int);
         }
