@@ -15,6 +15,7 @@ class visualizer
     r_shader shader;
     GLuint VAO;
     GLuint SSBO;
+    GLuint UBO;
 
     tripple_buffer<viz_data>* viz_data_buffer = nullptr;
 
@@ -22,6 +23,8 @@ class visualizer
     std::thread render_thread;
 
 public:
+    visualizer() : VAO(0), SSBO(0), UBO(0) {}
+
     void init(tripple_buffer<viz_data>* viz_buf);
     void deinit() 
     { 

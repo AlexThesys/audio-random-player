@@ -1,6 +1,8 @@
 // vertex shader
 #version 440 core
 
+#define FRAMES_PER_BUFFER 0x100 // same as in constants.h
+
 #define s16_min 32768.0f
 #define s16_max 32767.0f
 #define conversion_factor (2.0f / (s16_max + s16_min))
@@ -12,8 +14,10 @@ layout (std430, binding = 0) buffer storage_block {
 	int y_pos_data[]; // can accept both s16 and floats
 } sbo;
 
-uniform bool fp_mode;
-uniform int size;
+layout (std140, binding = 1) uniform ubo_block {
+	int width;
+	int fp_mode;
+} ubo;
 
 out v_colour {
     vec3 colour;
@@ -35,9 +39,11 @@ float s16_to_float(int val_packed, int selector)
 
 void main()
 {
+	const int size = FRAMES_PER_BUFFER;
+	
 	const int is_right_channel = gl_VertexID & 0x01;
 	
-	const float y_position = (!fp_mode) ? s16_to_float(sbo.y_pos_data[gl_VertexID / 2], is_right_channel) : intBitsToFloat(sbo.y_pos_data[gl_VertexID]);
+	const float y_position = (ubo.fp_mode == 0) ? s16_to_float(sbo.y_pos_data[gl_VertexID / 2], is_right_channel) : intBitsToFloat(sbo.y_pos_data[gl_VertexID]);
 
 	const float x_pos = float(gl_VertexID & (~1)) / float(size) - 1.0f; // == float(gl_VertexID & (~1)) * 0.5f / float(size)) * 2.0f - 1.0f;;
 	

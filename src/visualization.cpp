@@ -10,6 +10,15 @@
 #include "constants.h"
 #include "profiling.h"
 
+// binding points - same as in the shaders
+#define SSBO_BINDING_POINT 0
+#define UBO_BINDING_POINT 1
+
+static struct ubo_block {
+    int width;
+    int fp_mode;
+};
+
 bool visualizer::init_gl()
 {
     // window initialization
@@ -23,23 +32,23 @@ bool visualizer::init_gl()
         return false;
 
 //----------------------------------------------------------------
-    shader.use_program();
-    shader.set_uniform("size", FRAMES_PER_BUFFER); // maybe just set as a constant in the shader?
-    glUseProgram(0);
-
+    // create buffers
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &SSBO);
+    glGenBuffers(1, &UBO);
 
     glBindVertexArray(VAO);
 
-    //position
+    // SSBO
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), nullptr, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
-    const GLuint bind_point = 0u;
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bind_point, SSBO);
-    GLuint block_inndex = glGetUniformBlockIndex(shader.get_program_id(), "storage_block");
-    glUniformBlockBinding(shader.get_program_id(), block_inndex, bind_point);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT, SSBO);
+    // UBO
+    glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(ubo_block), nullptr, GL_STATIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, UBO_BINDING_POINT, UBO);
 
     glBindVertexArray(0);
 
@@ -70,19 +79,24 @@ void visualizer::run_gl()
         glClear(GL_COLOR_BUFFER_BIT);   
         // draw
         shader.use_program();
-        shader.set_uniform("width", window.get_buffer_width());
-        shader.set_uniform("fp_mode", fp_mode);
 
         glBindVertexArray(VAO);
+        // SSBO
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
-
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, VIZ_BUFFER_SIZE * data_size, viz_data_front_buf_ptr->container.data());
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        // UBO
+        glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+        ubo_block ubo_data = { window.get_buffer_width() , int(fp_mode) };
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ubo_block), &ubo_data);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
         glDrawArrays(GL_POINTS, 0, VIZ_BUFFER_SIZE);
+
         glBindVertexArray(0);
 
-        // swap buffers
         glUseProgram(0);
+        // swap buffers
         window.swap_buffers();
         // process input
         glfwPollEvents();
