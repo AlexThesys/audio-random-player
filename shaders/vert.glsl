@@ -3,6 +3,8 @@
 
 #define FRAMES_PER_BUFFER 0x100 // same as in constants.h
 
+#define WF_SCALE 0.5f
+
 #define s16_min 32768.0f
 #define s16_max 32767.0f
 #define conversion_factor (2.0f / (s16_max + s16_min))
@@ -49,11 +51,11 @@ void main()
 	
 	
 	const float offset = 0.25f - 0.5f * float(is_right_channel);
-	const float scale = 0.5f;
+	const float scale = WF_SCALE;
 	const float y_pos = y_position * scale + offset;
 	
 	const float amp = abs(y_position);
 	vs_out.colour = vec3(amp, 0.0f, (1.0f - amp));
 	
-    gl_Position = vec4(x_pos, y_pos, 0.0f, 1.0f);
+    gl_Position = vec4(x_pos, y_pos, offset, 1.0f); // z coord just holds the value for geometry shader
 }

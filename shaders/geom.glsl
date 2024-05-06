@@ -23,29 +23,32 @@ void main()
 {
 	const int size = FRAMES_PER_BUFFER;
 	
+	const vec4 position = vec4(gl_in[0].gl_Position.xy, 0.0f, 1.0f);
+	const float offset = gl_in[0].gl_Position.z;
+	vec4 base = position;
+	base.y = offset;
+	
 	const float s = float(size);
 	const float w = float(ubo.width);
 	const float extend = (max(s , w) / (s*s)) * 0.25f;
 	
-    gl_Position = gl_in[0].gl_Position;
+	const vec3 colour = gs_in[0].colour;
+	
+    gl_Position = position;
 	gl_Position.x -= extend;
-	gl_Position.y += extend;
-	gs_out.colour = gs_in[0].colour;
+	gs_out.colour = colour;
     EmitVertex();
-    gl_Position = gl_in[0].gl_Position;
+    gl_Position = position;
 	gl_Position.x += extend;
-	gl_Position.y += extend;
-	gs_out.colour = gs_in[0].colour;
+	gs_out.colour = colour;
     EmitVertex();
-    gl_Position = gl_in[0].gl_Position;
+    gl_Position = base;
 	gl_Position.x -= extend;
-	gl_Position.y -= extend;
-	gs_out.colour = gs_in[0].colour;
+	gs_out.colour = colour;
     EmitVertex();
-    gl_Position = gl_in[0].gl_Position;
+    gl_Position = base;
 	gl_Position.x += extend;
-	gl_Position.y -= extend;
-	gs_out.colour = gs_in[0].colour;
+	gs_out.colour = colour;
     EmitVertex();
 
     EndPrimitive();

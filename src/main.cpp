@@ -10,7 +10,7 @@
 
 int main(int argc, char **argv)
 {
-    PROFILE_SET_TREAD_NAME("Main/User");
+    PROFILE_SET_THREAD_NAME("Main/User");
 
     int ret = 0;
     if (std::thread::hardware_concurrency() < 2) {

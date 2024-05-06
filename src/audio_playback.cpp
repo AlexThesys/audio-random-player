@@ -196,7 +196,7 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
                                         const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
                                         void* user_data)
 {
-    PROFILE_SET_TREAD_NAME("Audio/Submit");
+    PROFILE_SET_THREAD_NAME("Audio/Submit");
 
 
     PROFILE_FRAME_START("Audio");
@@ -236,7 +236,7 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
 
 void audio_renderer::render(void* arg)
 {
-    PROFILE_SET_TREAD_NAME("Audio/Render");
+    PROFILE_SET_THREAD_NAME("Audio/Render");
 
     audio_renderer &renderer = *(audio_renderer*)arg;
     static const auto mcs = std::chrono::microseconds(1000);
@@ -349,7 +349,7 @@ AudioFile<float>* audio_streamer::request()
 
 void audio_streamer::stream(void* arg)
 {
-    PROFILE_SET_TREAD_NAME("Audio/Streamer");
+    PROFILE_SET_THREAD_NAME("Audio/Streamer");
 
     audio_streamer* streamer = (audio_streamer*)arg;
 
