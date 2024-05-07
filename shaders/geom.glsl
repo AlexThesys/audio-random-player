@@ -9,6 +9,7 @@ layout (triangle_strip, max_vertices = 4) out;
 layout (std140, binding = 1) uniform ubo_block {
 	int width;
 	int fp_mode;
+	int num_buffers;
 } ubo;
 
 in v_colour {
@@ -24,9 +25,8 @@ void main()
 	const int size = FRAMES_PER_BUFFER;
 	
 	const vec4 position = vec4(gl_in[0].gl_Position.xy, 0.0f, 1.0f);
-	const float offset = gl_in[0].gl_Position.z;
 	vec4 base = position;
-	base.y = offset;
+	base.y = gl_in[0].gl_Position.z; // y_offset
 	
 	const float s = float(size);
 	const float w = float(ubo.width);

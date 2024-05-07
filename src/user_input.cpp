@@ -7,8 +7,6 @@
 #include "utils.h"
 #include "profiling.h"
 
-#define MAX_INPUT_ARGS 2
-
 extern volatile play_params *params_middle_buffer;
 extern volatile LONG new_data;
 
@@ -116,10 +114,22 @@ void user_params::get_user_params(play_params *data)
                enable_dist, enable_fp_viz);
 }
 
+static const char* input_args[] = { "--no-fadeout", "-s=" };
+
 void user_params::process_cmdline_args(int argc, char **argv)
 {
-    for (int i = 1, sz = _min(argc, MAX_INPUT_ARGS); i < sz; i++) {
-        disable_fadeout = !strcmp(argv[i], "--no-fadeout");
+     for (int i = 1, sz = _min(argc, (_countof(input_args)+1)); i < sz; i++) {
+        if (!strcmp(argv[i], input_args[0])) {
+            disable_fadeout = true;
+        } else if (argv[i] == strstr(argv[i], input_args[1])) {
+            char* end_ptr;
+            const char* str = argv[i] + strlen(input_args[1]);
+            int32_t smoothing_lvl = (int32_t)strtol(str, &end_ptr, 10);
+            if (end_ptr != str) {
+                smoothing_lvl = clampr(smoothing_lvl, VIZ_BUFFER_SMOOTHING_LEVEL_MIN, VIZ_BUFFER_SMOOTHING_LEVEL_MAX);
+                viz_smoothing_level = smoothing_lvl;
+            }
+        }
         // ...
     }
 }

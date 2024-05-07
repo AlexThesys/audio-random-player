@@ -18,21 +18,21 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    user_params uparams;
-    uparams.process_cmdline_args(argc, argv);
-    uparams.get_folder_path();
+    user_params u_params;
+    u_params.process_cmdline_args(argc, argv);
+    u_params.get_folder_path();
 
     std::unique_ptr<audio_renderer> renderer = std::make_unique<audio_renderer>();
 
-    if (!renderer->init(uparams.folder_path, &uparams.max_lenght_samples)) {
+    if (!renderer->init(u_params.folder_path, &u_params.max_lenght_samples)) {
         puts("Error loading files...exiting.");
         return -1;
     }
 
     visualizer audio_viz;
-    audio_viz.init(renderer->get_viz_data_buffer());
+    audio_viz.init(renderer->get_viz_data_buffer(), u_params.viz_smoothing_level);
 
-    uparams.get_user_params(renderer->get_params_buffer()->get_data(1));
+    u_params.get_user_params(renderer->get_params_buffer()->get_data(1));
 
     renderer->start_rendering();
 
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         goto exit;
     }
 
-    uparams.run_user_loop(*renderer->get_data(), renderer->get_params_buffer());
+    u_params.run_user_loop(*renderer->get_data(), renderer->get_params_buffer());
 
     if (audio_player.deinit_pa() != paNoError) {
         ret = -1;

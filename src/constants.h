@@ -5,6 +5,9 @@
 #define MAX_FILES 32
 #define FRAMES_PER_BUFFER 0x100
 #define VIZ_BUFFER_SIZE (FRAMES_PER_BUFFER * NUM_CHANNELS)
+#define VIZ_BUFFER_SMOOTHING_LEVEL_MIN 1
+#define VIZ_BUFFER_SMOOTHING_LEVEL_MAX 8
+#define VIZ_BUFFER_SMOOTHING_LEVEL_DEF 1
 #define MAX_VOLUME 1.0f
 #define FP_IN_VEC 4 // sizeof(__m128) / sizeof(float)
 #define S16_IN_VEC 8 // sizeof(__m128) / sizeof(int16_t)

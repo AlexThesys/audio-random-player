@@ -18,14 +18,16 @@ class visualizer
     GLuint UBO;
 
     tripple_buffer<viz_data>* viz_data_buffer = nullptr;
+    uint64_t frame;
+    int32_t viz_smoothing_level;
 
     std::atomic<int> state_render{1};
     std::thread render_thread;
 
 public:
-    visualizer() : VAO(0), SSBO(0), UBO(0) {}
+    visualizer() : VAO(0), SSBO(0), UBO(0), frame(0), viz_smoothing_level(VIZ_BUFFER_SMOOTHING_LEVEL_DEF) {}
 
-    void init(tripple_buffer<viz_data>* viz_buf);
+    void init(tripple_buffer<viz_data>* viz_buf, int32_t smoothing_level);
     void deinit() 
     { 
         state_render.store(0); 

@@ -14,10 +14,13 @@
 #define SSBO_BINDING_POINT 0
 #define UBO_BINDING_POINT 1
 
-static struct ubo_block {
-    int width;
-    int fp_mode;
-};
+namespace {
+    struct ubo_block {
+        int32_t width;
+        int32_t fp_mode;
+        int32_t ssbo_selector;
+    };
+}
 
 bool visualizer::init_gl()
 {
@@ -41,7 +44,7 @@ bool visualizer::init_gl()
 
     // SSBO
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), nullptr, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t) * viz_smoothing_level, nullptr, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT, SSBO);
     // UBO
@@ -82,12 +85,15 @@ void visualizer::run_gl()
 
         glBindVertexArray(VAO);
         // SSBO
+        const int32_t ssbo_frame = int32_t(frame % viz_smoothing_level);
+        const size_t ssbo_size = VIZ_BUFFER_SIZE * data_size;
+        const size_t ssbo_offset = ssbo_size * ssbo_frame;
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, VIZ_BUFFER_SIZE * data_size, viz_data_front_buf_ptr->container.data());
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, ssbo_offset, ssbo_size, viz_data_front_buf_ptr->container.data());
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         // UBO
         glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-        ubo_block ubo_data = { window.get_buffer_width() , int(fp_mode) };
+        ubo_block ubo_data = { window.get_buffer_width() , int32_t(fp_mode), viz_smoothing_level };
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ubo_block), &ubo_data);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -100,6 +106,8 @@ void visualizer::run_gl()
         window.swap_buffers();
         // process input
         glfwPollEvents();
+
+        frame++;
 
         PROFILE_FRAME("Render");
         PROFILE_STOP("visualizer::run_gl");
@@ -114,9 +122,10 @@ void visualizer::deinit_gl()
     window.deinitialize();
 }
 
-void visualizer::init(tripple_buffer<viz_data>* viz_buf)
+void visualizer::init(tripple_buffer<viz_data>* viz_buf, int32_t smoothing_level)
 {
     viz_data_buffer = viz_buf;
+    viz_smoothing_level = smoothing_level;
     render_thread = std::thread(render, this);
 }
 
