@@ -145,7 +145,7 @@ private:
     {
         for (int i = 0; i < 3; i++) {
             viz_container &data = viz_data_buffer->get_data((size_t)i)->container;
-            memset(data.data(), 0, sizeof(int16_t) * VIZ_BUFFER_SIZE);
+            memset(data.data(), 0, sizeof(float) * VIZ_BUFFER_SIZE);
         }
     }
     void submit_viz_data(const output_buffer_container *output);
