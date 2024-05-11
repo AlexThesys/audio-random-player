@@ -178,18 +178,39 @@ void compute_fft::deinit()
 void compute_fft::run()
 {
     cl_int ret = CL_SUCCESS;
+
+    const size_t local_item_size = 64;
+    const size_t global_item_size = VIZ_BUFFER_SIZE; // we are computing FFTs for both channels independentely
+
     while (state_compute.load()) {
         const size_t q_id[2] = { (queue_selector + 0) & 0x01, (queue_selector + 1) & 0x01 };
         waveform_data& wf_data = waveform_consumer->begin_consuming();
-        const bool fp_mode = wf_data.fp_mode;
+        const cl_int fp_mode = (cl_int)wf_data.fp_mode;
         const size_t size = VIZ_BUFFER_SIZE * (!fp_mode ? sizeof(int16_t) : sizeof(float));
         ret = clEnqueueWriteBuffer(context.command_queue[q_id[0]], context.input[q_id[0]], CL_FALSE, 0, size * sizeof(float), wf_data.container.data(), 0, NULL, NULL);
         check_result("CL: Failed writing data to device.");
 
+        const cl_int output_id = (cl_int)ssbo_buffer_ids->get_back_buffer();
+        ssbo_buffer_ids->publish();
+        ret = clEnqueueAcquireGLObjects(context.command_queue[q_id[1]], 1, &context.output[output_id], 0, nullptr, nullptr);
+        check_result("CL: Failed acquiring GL objects.");
+
         // set kernel args
-        // ...
-        // enqueue the kernel in the queue[q_id[1]]
-        clFinish(context.command_queue[q_id[1]]);
+        const cl_int num_fft_bands = FRAMES_PER_BUFFER; // fixed for now
+        ret |= clSetKernelArg(context.kernel[0], 0, sizeof(cl_mem), (void*)&context.input[q_id[0]]);
+        ret |= clSetKernelArg(context.kernel[0], 1, sizeof(cl_mem), (void*)&context.output[output_id]);
+        ret |= clSetKernelArg(context.kernel[0], 3, sizeof(cl_int), (void*)&num_fft_bands);
+        ret |= clSetKernelArg(context.kernel[0], 4, sizeof(cl_int), (void*)&fp_mode);
+        check_result("CL: Failed setting kernel args.");
+
+        ret = clEnqueueNDRangeKernel(context.command_queue[q_id[1]], context.kernel[0], 1, NULL, &global_item_size, &local_item_size, 0, NULL, NULL);
+        check_result("CL: Failed running the kernel.");
+
+        ret = clFinish(context.command_queue[q_id[1]]); // we nned to wait for the kernel to finish to modify queue_selector
+        check_result("CL: clFinish failed.");
+        ret = clEnqueueReleaseGLObjects(context.command_queue[q_id[1]], 1, &context.output[output_id], 0, nullptr, nullptr);
+        check_result("CL: Failed releasing GL objects.");
+
         queue_selector ^= 0x01;
     }
 exit:

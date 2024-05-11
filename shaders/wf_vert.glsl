@@ -22,8 +22,10 @@ layout (std430, binding = 0) buffer storage_block {
 layout (std140, binding = 3) uniform ubo_block {
 	int width;
 	int fp_mode;
-	int num_buffers;
 } ubo;
+
+uniform int smoothing_level;
+
 
 out v_colour {
     vec3 colour;
@@ -47,7 +49,7 @@ void main()
 {
 	const int size_frames = FRAMES_PER_BUFFER;
 	const int buffer_size = VIZ_BUFFER_SIZE / (s16s_in_s32 - ubo.fp_mode);
-	const int num_buffers = ubo.num_buffers;
+	const int num_buffers = smoothing_level;
 	int buffer_offset = 0;
 	
 	const int is_right_channel = gl_VertexID & 0x01;

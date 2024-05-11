@@ -9,7 +9,6 @@ layout (triangle_strip, max_vertices = 4) out;
 layout (std140, binding = 3) uniform ubo_block {
 	int width;
 	int fp_mode;
-	int num_buffers;
 } ubo;
 
 in v_colour {

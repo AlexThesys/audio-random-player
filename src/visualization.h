@@ -32,7 +32,7 @@ public:
         HDC hDC;
     };
     
-    GLuint UBO; // shared between shader programms
+    GLuint UBO; // shared between the shader programs
 
 private:
     waveform_t waveform;

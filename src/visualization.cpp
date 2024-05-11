@@ -20,7 +20,6 @@ namespace {
     struct ubo_block {
         int32_t width;
         int32_t fp_mode;
-        int32_t ssbo_selector;
     };
 }
 
@@ -59,7 +58,7 @@ bool visualizer::init_gl()
         goto error;
     }
 
-    // UBO -- same UBO is shared between the shader programms
+    // UBO -- shared between the shader programs
     glGenBuffers(1, &UBO);
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(ubo_block), nullptr, GL_STATIC_DRAW);
@@ -78,7 +77,6 @@ bool visualizer::init_gl()
     glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t) * waveform.waveform_smoothing_level, nullptr, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_0, waveform.SSBO);
-
 
     glBindVertexArray(0);
 
@@ -139,9 +137,9 @@ void visualizer::run_gl()
         const bool fp_mode = wf_data_front_buf_ptr->fp_mode;
         const size_t data_size = !fp_mode ? sizeof(int16_t) : sizeof(float);
 
-        // UBO -- same UBO is shared between the shader programms
+        // UBO -- shared between the shader programs
         glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-        ubo_block ubo_data = { window.get_buffer_width() , int32_t(fp_mode), waveform.waveform_smoothing_level };
+        ubo_block ubo_data = { window.get_buffer_width() , int32_t(fp_mode) };
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ubo_block), &ubo_data);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -157,6 +155,8 @@ void visualizer::run_gl()
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, waveform.SSBO);
             glBufferSubData(GL_SHADER_STORAGE_BUFFER, ssbo_offset, ssbo_size, wf_data_front_buf_ptr->container.data());
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            // other uniforms 
+            waveform.shader.set_uniform("smoothing_level", waveform.waveform_smoothing_level); // used to calculate the offset within the SSBO
 
             glDrawArrays(GL_POINTS, 0, VIZ_BUFFER_SIZE);
         }
@@ -166,16 +166,14 @@ void visualizer::run_gl()
             fft.shader.use_program();
 
             glBindVertexArray(fft.VAO);
-            // SSBO
-            const int32_t ssbo_id = fft.ssbo_buffer_ids.consume();
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[ssbo_id]);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            // other uniforms 
+            const int ssbo_id = (int)fft.ssbo_buffer_ids.consume();
+            fft.shader.set_uniform("buffer_selector", ssbo_id); // used to select the SSBO
 
             glDrawArrays(GL_POINTS, 0, VIZ_BUFFER_SIZE);
         }
 
         glBindVertexArray(0);
-
         glUseProgram(0);
         // swap buffers
         window.swap_buffers();
