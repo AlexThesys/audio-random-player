@@ -7,35 +7,58 @@
 #include "Window.h"
 #include "Shader.h"
 #include "tripple_buffer.h"
+#include "semaphore.h"
+#include "AudioFile.h"
 #include "utils.h"
 
 class visualizer
 {
+public:
+    struct waveform_t {
+        tripple_buffer<waveform_data>* waveform_buffer = nullptr;
+        r_shader shader;
+        GLuint VAO;
+        GLuint SSBO;
+        int32_t waveform_smoothing_level;
+    };
+
+    struct fft_t {
+        tripple_indices ssbo_buffer_ids; // indices into SSBO array
+        r_shader shader;
+        GLuint VAO;
+        GLuint SSBO[3]; // tripple-buffered SSBOs
+        semaphore sem_cl; // used to signal that fft ssbos are ready
+        HGLRC hGLRC;
+        HDC hDC;
+    };
+    
+    GLuint UBO; // shared between shader programms
+
+private:
+    waveform_t waveform;
+    fft_t fft;
+
     r_window window;
-    r_shader shader;
-    GLuint VAO;
-    GLuint SSBO;
-    GLuint UBO;
-
-    tripple_buffer<viz_data>* viz_data_buffer = nullptr;
     uint64_t frame;
-    int32_t viz_smoothing_level;
 
-    std::atomic<int> state_render{1};
     std::thread render_thread;
+    std::atomic<int> state_render{1};
 
 public:
-    visualizer() : VAO(0), SSBO(0), UBO(0), frame(0), viz_smoothing_level(VIZ_BUFFER_SMOOTHING_LEVEL_DEF) {}
+    visualizer();
 
-    void init(tripple_buffer<viz_data>* viz_buf, int32_t smoothing_level);
+    void init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level);
     void deinit() 
     { 
         state_render.store(0); 
-        if (render_thread.joinable()) 
-            render_thread.join(); 
+        if (render_thread.joinable()) {
+            render_thread.join();
+        }
     }
 
     static void render(void *args);
+
+    fft_t& get_fft_data() { return fft; }
 
 private:
     bool init_gl();

@@ -19,7 +19,7 @@ layout (std430, binding = 0) buffer storage_block {
 	int y_pos_data[]; // can accept both s16 and floats
 } sbo;
 
-layout (std140, binding = 1) uniform ubo_block {
+layout (std140, binding = 3) uniform ubo_block {
 	int width;
 	int fp_mode;
 	int num_buffers;

@@ -11,8 +11,10 @@
 #include "profiling.h"
 
 // binding points - same as in the shaders
-#define SSBO_BINDING_POINT 0
-#define UBO_BINDING_POINT 1
+#define SSBO_BINDING_POINT_0 0
+#define SSBO_BINDING_POINT_1 1
+#define SSBO_BINDING_POINT_2 2
+#define UBO_BINDING_POINT 3
 
 namespace {
     struct ubo_block {
@@ -22,40 +24,95 @@ namespace {
     };
 }
 
+visualizer::visualizer()
+{
+    waveform.VAO = 0;
+    waveform.SSBO = 0;
+    waveform.waveform_smoothing_level = VIZ_BUFFER_SMOOTHING_LEVEL_DEF;
+
+    fft.VAO = 0;
+    memset(fft.SSBO, 0, sizeof(fft.SSBO));
+    fft.hGLRC = 0;
+    fft.hDC = 0;
+
+    UBO = 0;
+    frame = 0;
+}
+
 bool visualizer::init_gl()
 {
     // window initialization
     window.initialise();
 
     // create shaders
-    if (!shader.load_shaders("shaders/vert.glsl", "shaders/frag.glsl", "shaders/geom.glsl"))
-        return false;
-    
-    if (!shader.validate_program())
-        return false;
+    if (!waveform.shader.load_shaders("shaders/wf_vert.glsl", "shaders/wf_frag.glsl", "shaders/wf_geom.glsl")) {
+        goto error;
+    } 
+    if (!waveform.shader.validate_program()) {
+        goto error;
+    }
 
-//----------------------------------------------------------------
-    // create buffers
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &SSBO);
+    if (!fft.shader.load_shaders("shaders/fft_vert.glsl", "shaders/fft_frag.glsl", "shaders/fft_geom.glsl")) {
+        goto error;
+    }
+    if (!fft.shader.validate_program()) {
+        goto error;
+    }
+
+    // UBO -- same UBO is shared between the shader programms
     glGenBuffers(1, &UBO);
-
-    glBindVertexArray(VAO);
-
-    // SSBO
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t) * viz_smoothing_level, nullptr, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT, SSBO);
-    // UBO
     glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(ubo_block), nullptr, GL_STATIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(ubo_block), nullptr, GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferBase(GL_UNIFORM_BUFFER, UBO_BINDING_POINT, UBO);
 
+//--------- waveform -------------------------------------------------------
+    // create buffers
+    glGenVertexArrays(1, &waveform.VAO);
+    glGenBuffers(1, &waveform.SSBO);
+
+    glBindVertexArray(waveform.VAO);
+
+    // SSBO
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, waveform.SSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t) * waveform.waveform_smoothing_level, nullptr, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_0, waveform.SSBO);
+
+
     glBindVertexArray(0);
 
+    //--------- fft -------------------------------------------------------
+    glGenVertexArrays(1, &fft.VAO);
+    glGenBuffers(3, fft.SSBO);
+
+    glBindVertexArray(fft.VAO);
+
+    // SSBO
+    int8_t zero_buf[VIZ_BUFFER_SIZE * sizeof(float)];
+    memset(zero_buf, 0, sizeof(zero_buf)); // zeroize input buffers
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[0]);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), zero_buf, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[1]);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), zero_buf, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[2]);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), zero_buf, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_0, fft.SSBO[0]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_1, fft.SSBO[1]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_2, fft.SSBO[2]);
+
+    glBindVertexArray(0);
+
+    fft.hGLRC = wglGetCurrentContext();
+    fft.hDC = wglGetCurrentDC();
+    fft.sem_cl.signal(); // signal cl thread that ssbo is ready
+
     return true;
+
+error:
+    fft.sem_cl.signal(); // signal cl thread that ssbo is ready
+    return false;
 }
 
 void visualizer::run_gl()
@@ -66,38 +123,56 @@ void visualizer::run_gl()
     auto prev_tm = std::chrono::high_resolution_clock::now();
     while(!window.get_should_close() && state_render.load())
     {
+        // limit fps to 60
         const auto curr_tm = std::chrono::high_resolution_clock::now();
         const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(curr_tm - prev_tm);
         if (duration.count() < TARGET_FPS_mcs) {
             std::this_thread::sleep_for(frame_time - duration);
         }
+        prev_tm = curr_tm;
 
         PROFILE_START("visualizer::run_gl");
 
-        prev_tm = curr_tm;
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        viz_data* viz_data_front_buf_ptr = viz_data_buffer->consume();
-        const bool fp_mode = viz_data_front_buf_ptr->fp_mode;
+        waveform_data* wf_data_front_buf_ptr = waveform.waveform_buffer->consume();
+        const bool fp_mode = wf_data_front_buf_ptr->fp_mode;
         const size_t data_size = !fp_mode ? sizeof(int16_t) : sizeof(float);
-        glClear(GL_COLOR_BUFFER_BIT);   
-        // draw
-        shader.use_program();
 
-        glBindVertexArray(VAO);
-        // SSBO
-        const int32_t ssbo_frame = int32_t(frame % viz_smoothing_level);
-        const size_t ssbo_size = VIZ_BUFFER_SIZE * data_size;
-        const size_t ssbo_offset = ssbo_size * ssbo_frame;
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, ssbo_offset, ssbo_size, viz_data_front_buf_ptr->container.data());
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-        // UBO
+        // UBO -- same UBO is shared between the shader programms
         glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-        ubo_block ubo_data = { window.get_buffer_width() , int32_t(fp_mode), viz_smoothing_level };
+        ubo_block ubo_data = { window.get_buffer_width() , int32_t(fp_mode), waveform.waveform_smoothing_level };
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ubo_block), &ubo_data);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-        glDrawArrays(GL_POINTS, 0, VIZ_BUFFER_SIZE);
+        // draw waveform
+        {          
+            waveform.shader.use_program();
+
+            glBindVertexArray(waveform.VAO);
+            // SSBO
+            const int32_t ssbo_frame = int32_t(frame % waveform.waveform_smoothing_level);
+            const size_t ssbo_size = VIZ_BUFFER_SIZE * data_size;
+            const size_t ssbo_offset = ssbo_size * ssbo_frame;
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, waveform.SSBO);
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, ssbo_offset, ssbo_size, wf_data_front_buf_ptr->container.data());
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+            glDrawArrays(GL_POINTS, 0, VIZ_BUFFER_SIZE);
+        }
+
+        // draw fft
+        {
+            fft.shader.use_program();
+
+            glBindVertexArray(fft.VAO);
+            // SSBO
+            const int32_t ssbo_id = fft.ssbo_buffer_ids.consume();
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[ssbo_id]);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+            glDrawArrays(GL_POINTS, 0, VIZ_BUFFER_SIZE);
+        }
 
         glBindVertexArray(0);
 
@@ -116,16 +191,17 @@ void visualizer::run_gl()
 
 void visualizer::deinit_gl()
 {
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &SSBO);
-    shader.delete_shader();
+    glDeleteVertexArrays(1, &waveform.VAO);
+    glDeleteBuffers(1, &waveform.SSBO);
+    waveform.shader.delete_shader();
     window.deinitialize();
 }
 
-void visualizer::init(tripple_buffer<viz_data>* viz_buf, int32_t smoothing_level)
+void visualizer::init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level)
 {
-    viz_data_buffer = viz_buf;
-    viz_smoothing_level = smoothing_level;
+    waveform.waveform_buffer = wf_buf;
+    waveform.waveform_smoothing_level = smoothing_level;
+
     render_thread = std::thread(render, this);
 }
 
@@ -137,6 +213,6 @@ void visualizer::render(void* args)
         viz->run_gl();
         viz->deinit_gl();
     } else {
-        viz->shader.delete_shader();
+        viz->waveform.shader.delete_shader();
     }
 }

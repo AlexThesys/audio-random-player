@@ -153,12 +153,14 @@ bool audio_renderer::init(const char* folder_path, size_t* max_lenght_samples)
     data = new pa_data();
     streamer = new audio_streamer();
     params_buffer = new tripple_buffer<play_params>();
-    viz_data_buffer = new tripple_buffer<viz_data>();
+    waveform_buffer = new tripple_buffer<waveform_data>();
+    waveform_producer = new producer_consumer<waveform_data>();
     if (!streamer->init(folder_path, max_lenght_samples)) {
         delete streamer;
         delete data;
         delete params_buffer;
-        delete viz_data_buffer;
+        delete waveform_buffer;
+        delete waveform_producer;
         return false;
     }
     static_assert((FRAMES_PER_BUFFER & (FP_IN_VEC - 1)) == 0x0, "Frame buffer size should be divisible by 4.");
@@ -169,7 +171,7 @@ bool audio_renderer::init(const char* folder_path, size_t* max_lenght_samples)
         buf.resize(FRAMES_PER_BUFFER * NUM_CHANNELS / FP_IN_VEC, zero);
     }
 
-    zero_out_viz_data();
+    zero_out_waveform_data();
 
     return true;
 }
@@ -189,7 +191,8 @@ void audio_renderer::deinit()
     delete streamer;
     delete data;
     delete params_buffer;
-    delete viz_data_buffer;
+    delete waveform_buffer;
+    delete waveform_producer;
 }
 
 int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
@@ -214,19 +217,35 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
     
     output_buffer_container* output = nullptr;
     constexpr size_t buffer_size_bytes = FRAMES_PER_BUFFER * NUM_CHANNELS * sizeof(float);
+    const bool fp_mode = renderer->data->uparams->fp_visualization;
+    const size_t bytes_to_copy = FRAMES_PER_BUFFER * NUM_CHANNELS * (fp_mode ? sizeof(float) : sizeof(int16_t));
     if (renderer->buffer_queue.try_read(output)) {
         memcpy(output_buffer, output->data(), buffer_size_bytes); // TODO: check the disassembly
-
-        renderer->submit_viz_data(output); // would be better to do this in audio render thread, not in audio callback
+        // waveform data for the graphics engine
+        renderer->submit_waveform_data(output); // would be better to do this in audio render thread, not in audio callback
+        // waveform data for the fft computer
+        auto* producer = renderer->get_waveform_producer();
+        auto* waveform_buffer = renderer->get_waveform_data_buffer();
+        waveform_data* waveform_data_back_buffer_ptr = waveform_buffer->get_back_buffer();
+        waveform_data& wf_data = producer->begin_producing();
+        memcpy(wf_data.container.data(), waveform_data_back_buffer_ptr->container.data(), bytes_to_copy);
+        producer->end_producing();
+        // we publish the waveform data to the graphics thread only after it's been copied to the fft compute buffer
+        waveform_buffer->publish();
 
         renderer->buffer_queue.advance();
     } else {
         memset(output_buffer, 0, buffer_size_bytes);
-        // zero out viz_data - would be better to do this in audio render thread, not in audio callback
-        auto* viz_data_buffer = renderer->get_viz_data_buffer();
-        viz_data* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
-        memset(viz_data_back_buffer_ptr->container.data(), 0, buffer_size_bytes);
-        viz_data_buffer->publish();
+        // zero out waveform_data - would be better to do this in audio render thread, not in audio callback
+        auto* waveform_buffer = renderer->get_waveform_data_buffer();
+        waveform_data* waveform_data_back_buffer_ptr = waveform_buffer->get_back_buffer();
+        memset(waveform_data_back_buffer_ptr->container.data(), 0, bytes_to_copy);
+        waveform_buffer->publish();
+        // zero out fft data
+        auto* producer = renderer->get_waveform_producer();
+        waveform_data& wf_data = producer->begin_producing();
+        memset(wf_data.container.data(), 0, bytes_to_copy);
+        producer->end_producing();
     }
     PROFILE_STOP("audio_renderer::fill_output_buffer");
     PROFILE_FRAME_STOP("Audio");
@@ -265,12 +284,12 @@ void audio_renderer::process_data()
     PROFILE_STOP("audio_renderer::process_data");
 }
 
-void audio_renderer::submit_viz_data(const output_buffer_container* output)
+void audio_renderer::submit_waveform_data(const output_buffer_container* output)
 {
-    PROFILE_START("audio_renderer::submit_viz_data");
+    PROFILE_START("audio_renderer::submit_waveform_data");
 
-    viz_data* viz_data_back_buffer_ptr = viz_data_buffer->get_back_buffer();
-    viz_container& container = viz_data_back_buffer_ptr->container;
+    waveform_data* waveform_data_back_buffer_ptr = waveform_buffer->get_back_buffer();
+    waveform_container& container = waveform_data_back_buffer_ptr->container;
     const bool fp_mode = data->uparams->fp_visualization;
     if (!fp_mode) {
         constexpr size_t container_size = FRAMES_PER_BUFFER * NUM_CHANNELS / S16_IN_VEC;
@@ -306,10 +325,9 @@ void audio_renderer::submit_viz_data(const output_buffer_container* output)
         constexpr size_t buffer_size_bytes = FRAMES_PER_BUFFER * NUM_CHANNELS * sizeof(float);
         memcpy(container.data(), output->data(), buffer_size_bytes);
     }
-    viz_data_back_buffer_ptr->fp_mode = fp_mode;
-    viz_data_buffer->publish();
+    waveform_data_back_buffer_ptr->fp_mode = fp_mode;
 
-    PROFILE_STOP("audio_renderer::submit_viz_data");
+    PROFILE_STOP("audio_renderer::submit_waveform_data");
 }
 
 bool audio_streamer::init(const char* folder_path, size_t* max_lenght_samples)

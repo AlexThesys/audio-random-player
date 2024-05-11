@@ -12,9 +12,7 @@ public:
 	void wait() 
 	{
 		std::unique_lock<std::mutex> lock(m);
-		//if (!this->ready) {
-			cv.wait(lock, [this]() { return this->ready; });
-		//}
+		cv.wait(lock, [this]() { return this->ready; });
 		this->ready = 0;
 	}
 	void signal()

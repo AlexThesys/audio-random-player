@@ -9,6 +9,7 @@
 #include "circular_buffer.h"
 #include "semaphore.h"
 #include "tripple_buffer.h"
+#include "producer_consumer.h"
 
 struct play_data
 {
@@ -121,7 +122,11 @@ class audio_renderer
     pa_data* data = nullptr;
     audio_streamer* streamer = nullptr;
     tripple_buffer<play_params> *params_buffer = nullptr;
-    tripple_buffer<viz_data> *viz_data_buffer = nullptr;
+    // ouput to graphics engine
+    tripple_buffer<waveform_data> *waveform_buffer = nullptr;
+    // output to fft computer
+    producer_consumer<waveform_data> *waveform_producer = nullptr; // producer for waveform_consumer
+
     std::array<output_buffer_container, (1 << NUM_BUFFERS_POW_2)> buffers;
     size_t buffer_idx = 0;
     circular_buffer<output_buffer_container*, NUM_BUFFERS_POW_2> buffer_queue; // thread-safe
@@ -133,7 +138,8 @@ public:
     void deinit();
     pa_data* get_data() { return data; }
     tripple_buffer<play_params> *get_params_buffer() { return params_buffer; }
-    tripple_buffer<viz_data> *get_viz_data_buffer() { return viz_data_buffer; }
+    tripple_buffer<waveform_data> *get_waveform_data_buffer() { return waveform_buffer; }
+    producer_consumer<waveform_data> *get_waveform_producer() { return waveform_producer; }
 
     static int fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,
                             const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
@@ -141,14 +147,25 @@ public:
 private:
     static void render(void* renderer);
     void process_data();
-    void zero_out_viz_data()
+    void zero_out_waveform_data()
     {
         for (int i = 0; i < 3; i++) {
-            viz_container &data = viz_data_buffer->get_data((size_t)i)->container;
+            waveform_container &data = waveform_buffer->get_data((size_t)i)->container;
             memset(data.data(), 0, sizeof(float) * VIZ_BUFFER_SIZE);
         }
+        for (int i = 0; i < 2; i++) {
+            waveform_producer->init_data([](void* a, void* b) 
+                {   
+                    waveform_data* a_ptr = (waveform_data*)a;
+                    waveform_data* b_ptr = (waveform_data*)a;
+                    memset(a_ptr->container.data(), 0, sizeof(float) * a_ptr->container.size());
+                    memset(b_ptr->container.data(), 0, sizeof(float) * b_ptr->container.size());
+                    a_ptr->fp_mode = false;
+                    b_ptr->fp_mode = false;
+                });
+        }
     }
-    void submit_viz_data(const output_buffer_container *output);
+    void submit_waveform_data(const output_buffer_container *output);
 };
 
 class audio_streamer

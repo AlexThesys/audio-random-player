@@ -6,11 +6,11 @@ struct user_params {
 	size_t max_lenght_samples;
 	char folder_path[MAX_PATH];
 	// cmd args
-	int32_t viz_smoothing_level;
+	int32_t waveform_smoothing_level;
 	bool disable_fadeout;
 
 public:
-	user_params() : max_lenght_samples(0), viz_smoothing_level(VIZ_BUFFER_SMOOTHING_LEVEL_DEF), disable_fadeout(false) {}
+	user_params() : max_lenght_samples(0), waveform_smoothing_level(VIZ_BUFFER_SMOOTHING_LEVEL_DEF), disable_fadeout(false) {}
 	bool get_folder_path();
 	void get_user_params(play_params* data);
 	void process_cmdline_args(int argc, char** argv);

@@ -105,13 +105,13 @@ void user_params::get_user_params(play_params *data)
 
     printf("\nEnable floating point visualization? [y/n]\t");
     ch = static_cast<char>(getchar());
-    const bool enable_fp_viz = (ch == 'y' || ch == 'Y');
-    printf("%c\n", enable_fp_viz ? 'y' : 'n');
+    const bool enable_fp_wf = (ch == 'y' || ch == 'Y');
+    printf("%c\n", enable_fp_wf ? 'y' : 'n');
 
     while ((getchar()) != '\n'); // flush stdin
 
     data->init(step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, lfo_freq, lfo_amount, use_lfo,
-               enable_dist, enable_fp_viz);
+               enable_dist, enable_fp_wf);
 }
 
 static const char* input_args[] = { "--no-fadeout", "-s=" };
@@ -127,7 +127,7 @@ void user_params::process_cmdline_args(int argc, char **argv)
             int32_t smoothing_lvl = (int32_t)strtol(str, &end_ptr, 10);
             if (end_ptr != str) {
                 smoothing_lvl = clampr(smoothing_lvl, VIZ_BUFFER_SMOOTHING_LEVEL_MIN, VIZ_BUFFER_SMOOTHING_LEVEL_MAX);
-                viz_smoothing_level = smoothing_lvl;
+                waveform_smoothing_level = smoothing_lvl;
             }
         }
         // ...
