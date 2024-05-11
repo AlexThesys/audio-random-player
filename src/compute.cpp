@@ -27,26 +27,26 @@ cl_int compute_fft::compute_context::init(const char* filename, const compute_ff
 
     // Get platform and device information
     cl_int ret = CL_SUCCESS;
-    constexpr cl_uint max_platforms = 4;
     std::vector<cl_platform_id> platform_ids;
     cl_platform_id platform_id;
     cl_uint ret_num_devices;
     cl_uint ret_num_platforms;
-    ret = clGetPlatformIDs(max_platforms, nullptr, &ret_num_platforms);
+    ret = clGetPlatformIDs(0, nullptr, &ret_num_platforms);
     platform_ids.resize(ret_num_platforms);
-    ret |= clGetPlatformIDs(max_platforms, platform_ids.data(), &ret_num_platforms);
+    ret |= clGetPlatformIDs(ret_num_platforms, platform_ids.data(), &ret_num_platforms);
     check_result("Error: CL failed to retrive platform IDs!");
     bool platform_found = false;
     for (int i = 0; i < ret_num_platforms; i++) {
-        char extension_string[1024];
-        memset(extension_string, ' ', 1024);
-        ret = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_EXTENSIONS, sizeof(extension_string), extension_string, nullptr);
-        if (ret != CL_SUCCESS) {
-            continue;
-        }
+        size_t extension_size;
+        ret = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_EXTENSIONS, 0, NULL, &extension_size);
+        check_result("Error CL: Failed retrieving platform info!");
+        char* extensions = (char*)malloc(extension_size);
+        memset(extensions, 0, extension_size);
+        ret = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_EXTENSIONS, extension_size, extensions, nullptr);
+        check_result("Error CL: Failed retrieving platform info!");
         char* ext_string_start = nullptr;
-        ext_string_start = strstr(extension_string, "cl_khr_gl_sharing");
-        if (ext_string_start == 0) {
+        ext_string_start = strstr(extensions, "cl_khr_gl_sharing");
+        if (ext_string_start != nullptr) {
             platform_id = platform_ids[i];
             platform_found = true;
             break;
@@ -69,7 +69,7 @@ cl_int compute_fft::compute_context::init(const char* filename, const compute_ff
 
     // Select cl device
     clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(platform_id, "clGetGLContextInfoKHR");
-    ret = pclGetGLContextInfoKHR(cps, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(device_id), device_id, NULL);
+    ret = pclGetGLContextInfoKHR(cps, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(device_id), &device_id, NULL);
     check_result("Error: CL failed to select an appropriate device!");
 
     // Create cl context
