@@ -7,16 +7,16 @@
 
 #define WF_SCALE 0.5f
 
-layout (std430, binding = 0) buffer storage_block {
-	vec2 y_pos_data[];
+layout (std430, binding = 0) buffer storage_block_0 {
+	vec2 data[];
 } sbo_0;
 
-layout (std430, binding = 1) buffer storage_block {
-	vec2 y_pos_data[];
+layout (std430, binding = 1) buffer storage_block_1 {
+	vec2 data[];
 } sbo_1;
 
-layout (std430, binding = 2) buffer storage_block {
-	vec2 y_pos_data[];
+layout (std430, binding = 2) buffer storage_block_2 {
+	vec2 data[];
 } sbo_2;
 
 uniform int buffer_selector;
@@ -34,13 +34,13 @@ void main()
 	vec2 fft;
 	switch (buffer_selector) {
 		case 0 :
-			fft = ssbo_0[gl_VertexID];
+			fft = sbo_0.data[gl_VertexID];
 			break;
 		case 1 :
-			fft = ssbo_1[gl_VertexID];
+			fft = sbo_1.data[gl_VertexID];
 			break;
 		case 2 :
-			fft = ssbo_2[gl_VertexID];
+			fft = sbo_2.data[gl_VertexID];
 			break;
 		default : // shouldn't happend
 			fft = vec2(0.0f, 0.0f);

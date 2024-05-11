@@ -24,7 +24,7 @@ void main()
 {
 	const int size = FRAMES_PER_BUFFER;
 	
-	const vec4 position = vec4(gl_in[0].gl_Position, 1.0f);
+	const vec4 position = gl_in[0].gl_Position;
 	vec4 base = position;
 	base.y = 0.0f;
 	
