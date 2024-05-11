@@ -88,7 +88,19 @@ cl_int compute_fft::compute_context::init(const char* filename, const compute_ff
 
     // Build the program
     ret = clBuildProgram(program, 1, &device_id, "-Werror -cl-denorms-are-zero -cl-fast-relaxed-math", NULL, NULL);
-    check_result("Error: CL failed to build programm!");
+    if (ret != CL_SUCCESS) {
+        size_t log_size;
+        ret = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+        check_result("Error: CL failed retrieving shader compilation error log!");
+        char* log = (char*)malloc(log_size);
+        ret = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
+        if (ret != CL_SUCCESS) {
+            free(log);
+            check_result("Error: CL failed retrieving shader compilation error log!");
+        }
+        printf("Compilation log:\n%s\n", log);
+        free(log);
+    }
 
     // Create the OpenCL kernels
     kernel[0] = clCreateKernel(program, "compute_fft", &ret);

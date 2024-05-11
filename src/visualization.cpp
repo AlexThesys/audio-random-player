@@ -87,14 +87,14 @@ bool visualizer::init_gl()
     glBindVertexArray(fft.VAO);
 
     // SSBO
-    int8_t zero_buf[VIZ_BUFFER_SIZE * sizeof(float)];
+    int8_t zero_buf[VIZ_BUFFER_SIZE * sizeof(glm::vec2)];
     memset(zero_buf, 0, sizeof(zero_buf)); // zeroize input buffers
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[0]);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), zero_buf, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(glm::vec2), zero_buf, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[1]);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), zero_buf, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(glm::vec2), zero_buf, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[2]);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(int32_t), zero_buf, GL_DYNAMIC_DRAW); // allocating a big enough buffer to fit either s16 or floats
+    glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(glm::vec2), zero_buf, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_0, fft.SSBO[0]);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_1, fft.SSBO[1]);

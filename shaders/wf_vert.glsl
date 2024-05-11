@@ -71,7 +71,7 @@ void main()
 	const float x_pos = float(gl_VertexID & (~1)) / float(size_frames) - 1.0f; // == float(gl_VertexID & (~1)) * 0.5f / float(size_frames)) * 2.0f - 1.0f;;
 	
 	
-	const float y_offset = 0.25f - 0.5f * float(is_right_channel);
+	const float y_offset = 0.5f - float(is_right_channel); // 0.25f - 0.5f * float(is_right_channel);
 	const float y_scale = WF_SCALE;
 	const float y_pos = y_position * y_scale + y_offset;
 	

@@ -2,6 +2,7 @@
 #version 440 core
 
 #define FRAMES_PER_BUFFER 0x100 // same as in constants.h
+#define WF_SCALE 0.5f
 
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
@@ -43,11 +44,11 @@ void main()
     EmitVertex();
     gl_Position = base;
 	gl_Position.x -= extend;
-	gs_out.colour = colour;
+	gs_out.colour = colour; // vec3(0.0f, 0.0f, 1.0f);
     EmitVertex();
     gl_Position = base;
 	gl_Position.x += extend;
-	gs_out.colour = colour;
+	gs_out.colour = colour; // vec3(0.0f, 0.0f, 1.0f);
     EmitVertex();
 
     EndPrimitive();
