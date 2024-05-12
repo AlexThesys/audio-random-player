@@ -5,6 +5,10 @@
 #include <GLFW/glfw3.h>
 #include "glm/glm.hpp"
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#include <GLFW/glfw3native.h>
+
 #include "AudioFile.h"
 #include "visualization.h"
 #include "constants.h"
@@ -102,14 +106,20 @@ bool visualizer::init_gl()
 
     glBindVertexArray(0);
 
-    fft.hGLRC = wglGetCurrentContext();
-    fft.hDC = wglGetCurrentDC();
+    //fft.hGLRC = wglGetCurrentContext();
+    //fft.hDC = wglGetCurrentDC();
+    fft.hGLRC = glfwGetWGLContext(window.get_window());
+    const HWND hwnd = glfwGetWin32Window(window.get_window());
+    fft.hDC = GetDC(hwnd);
+
+    glFinish();
+
     fft.sem_cl.signal(); // signal cl thread that ssbo is ready
 
     return true;
 
 error:
-    fft.sem_cl.signal(); // signal cl thread that ssbo is ready
+    fft.sem_cl.signal(); // release cl thread
     return false;
 }
 
@@ -191,6 +201,9 @@ void visualizer::deinit_gl()
 {
     glDeleteVertexArrays(1, &waveform.VAO);
     glDeleteBuffers(1, &waveform.SSBO);
+    waveform.shader.delete_shader();
+    glDeleteVertexArrays(1, &fft.VAO);
+    glDeleteBuffers(3, fft.SSBO);
     waveform.shader.delete_shader();
     window.deinitialize();
 }

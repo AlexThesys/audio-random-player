@@ -9,10 +9,10 @@
 
 float s16_to_float(short val)
 {
-	return ((float(val) + s16_min) * conversion_factor) - 1.0f;
+	return (((float)val + s16_min) * conversion_factor) - 1.0f;
 }
 
-__kernel void compute_fft(int* input, float2* output, int num_bands, int fp_mode) {
+__kernel void compute_fft(__global int* input, __global float2* output, int num_bands, int fp_mode) {
 	const int t_id = get_global_id(0);
 	const float wf_input = (!fp_mode) ? s16_to_float(((__global short*)input)[t_id]) : as_float(input[t_id]);
 	

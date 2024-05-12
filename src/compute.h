@@ -35,7 +35,7 @@ class compute_fft {
     struct {
         HGLRC hGLRC;
         HDC hDC;
-        cl_uint ssbo[3]; // tripple-buffered SSBOs
+        cl_GLuint ssbo[3]; // tripple-buffered SSBOs
     } gl_context;
 
     std::thread compute_thread;

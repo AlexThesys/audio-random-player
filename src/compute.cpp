@@ -28,12 +28,12 @@ cl_int compute_fft::compute_context::init(const char* filename, const compute_ff
     // Get platform and device information
     cl_int ret = CL_SUCCESS;
     std::vector<cl_platform_id> platform_ids;
+    std::vector<cl_device_id> device_ids;
     cl_platform_id platform_id;
-    cl_uint ret_num_devices;
     cl_uint ret_num_platforms;
     ret = clGetPlatformIDs(0, nullptr, &ret_num_platforms);
     platform_ids.resize(ret_num_platforms);
-    ret |= clGetPlatformIDs(ret_num_platforms, platform_ids.data(), &ret_num_platforms);
+    ret |= clGetPlatformIDs(ret_num_platforms, platform_ids.data(), nullptr);
     check_result("Error: CL failed to retrive platform IDs!");
     bool platform_found = false;
     for (int i = 0; i < ret_num_platforms; i++) {
@@ -58,23 +58,63 @@ cl_int compute_fft::compute_context::init(const char* filename, const compute_ff
         return -1;
     }
 
-    // GL context props
+    // get device IDs
+    cl_uint num_devices;
+    ret = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 0, nullptr, &num_devices);
+    check_result("Error CL: couldn't retrieve device ids.");
+    device_ids.resize(num_devices);
+    ret = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, num_devices, device_ids.data(), nullptr);
+    check_result("Error CL: couldn't retrieve device ids.");
+    bool device_found = false;
+    for (int i = 0; i < num_devices; i++) {
+        size_t extension_size;
+        ret = clGetDeviceInfo(device_ids[i], CL_DEVICE_EXTENSIONS, 0, NULL, &extension_size);
+        check_result("Error CL: Failed retrieving device info!");
+        char* extensions = (char*)malloc(extension_size);
+        memset(extensions, 0, extension_size);
+        ret = clGetDeviceInfo(device_ids[i], CL_DEVICE_EXTENSIONS, extension_size, extensions, nullptr);
+        check_result("Error CL: Failed retrieving device info!");
+        char* ext_string_start = nullptr;
+        ext_string_start = strstr(extensions, "cl_khr_gl_sharing");
+        if (ext_string_start != nullptr) {
+            device_id = device_ids[i];
+            device_found = true;
+            break;
+        }
+    }
+    if (!device_found) {
+        puts("Device doesn't support cl_khr_gl_sharing.");
+        free(source_str);
+        return -1;
+    }
+
+        // GL context props
     cl_context_properties cps[] =
     {
-        CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id,
         CL_GL_CONTEXT_KHR, (cl_context_properties)owner->gl_context.hGLRC,
         CL_WGL_HDC_KHR, (cl_context_properties)owner->gl_context.hDC,
+        CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id,
         0
     };
-
-    // Select cl device
-    clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(platform_id, "clGetGLContextInfoKHR");
-    ret = pclGetGLContextInfoKHR(cps, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(device_id), &device_id, NULL);
-    check_result("Error: CL failed to select an appropriate device!");
 
     // Create cl context
     context = clCreateContext(cps, 1, &device_id, NULL, NULL, &ret);
     check_result("Error: CL failed to create context!");
+
+    // Select cl device bound to the gl context
+    clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(platform_id, "clGetGLContextInfoKHR");
+    size_t dev_bytes = 0;
+    ret = pclGetGLContextInfoKHR(cps, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, 0, NULL, &dev_bytes);
+    check_result("Error CL: clGetGLContextInfoKHR failed!");
+    const cl_uint num_devs = dev_bytes / sizeof(cl_device_id);
+    if (num_devs <= 0) {
+        puts("CL: no devices bound to GL context found!");
+        goto exit;
+    }
+    device_ids.resize(num_devs);
+    ret = pclGetGLContextInfoKHR(cps, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, dev_bytes, device_ids.data(), NULL);
+    check_result("Error CL: clGetGLContextInfoKHR failed!");
+    device_id = device_ids[0]; // just pick the first one
 
     // Create command queues
     command_queue[0] = clCreateCommandQueue(context, device_id, 0, &ret);  // in-order execution
@@ -107,9 +147,9 @@ cl_int compute_fft::compute_context::init(const char* filename, const compute_ff
     check_result("Error: CL failed to create kernel #0!");
 
     // allocate input buffer large enough to hold both floats and s16s alike
-    input[0] = clCreateBuffer(context, CL_MEM_READ_WRITE, VIZ_BUFFER_SIZE * sizeof(float), NULL, &ret);
+    input[0] = clCreateBuffer(context, CL_MEM_READ_ONLY, VIZ_BUFFER_SIZE * sizeof(float), NULL, &ret);
     check_result("Error: CL failed allocating input #0!");
-    input[1] = clCreateBuffer(context, CL_MEM_READ_WRITE, VIZ_BUFFER_SIZE * sizeof(float), NULL, &ret);
+    input[1] = clCreateBuffer(context, CL_MEM_READ_ONLY, VIZ_BUFFER_SIZE * sizeof(float), NULL, &ret);
     check_result("Error: CL failed allocating input #1!");
     // zeroize input buffers
     int8_t zero_buf[VIZ_BUFFER_SIZE * sizeof(float)];
@@ -146,7 +186,9 @@ cl_int compute_fft::compute_context::deinit()
 
     ret = clReleaseMemObject(input[0]);
     ret = clReleaseMemObject(input[1]);
-    // outputs are handled by openGL
+    ret = clReleaseMemObject(output[0]);
+    ret = clReleaseMemObject(output[1]);
+    ret = clReleaseMemObject(output[2]);
 
 	ret |= clReleaseContext(context);
 	

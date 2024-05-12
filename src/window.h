@@ -20,6 +20,7 @@ public:
 	void swap_buffers(){ glfwSwapBuffers(main_window); }
 	GLint get_buffer_width() const { return buffer_width; }
 	GLint get_buffer_height() const { return buffer_height; }
+	GLFWwindow* get_window() { return main_window; }
 };
 
 inline void r_window::deinitialize() 
