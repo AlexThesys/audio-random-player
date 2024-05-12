@@ -7,15 +7,15 @@
 
 #define WF_SCALE 0.5f
 
-layout (std430, binding = 0) buffer storage_block_0 {
+layout (std430, binding = 1) buffer storage_block_0 {
 	vec2 data[];
 } sbo_0;
 
-layout (std430, binding = 1) buffer storage_block_1 {
+layout (std430, binding = 2) buffer storage_block_1 {
 	vec2 data[];
 } sbo_1;
 
-layout (std430, binding = 2) buffer storage_block_2 {
+layout (std430, binding = 3) buffer storage_block_2 {
 	vec2 data[];
 } sbo_2;
 

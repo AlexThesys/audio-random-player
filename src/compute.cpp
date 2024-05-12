@@ -236,7 +236,7 @@ void compute_fft::run()
         }
         const cl_int fp_mode = (cl_int)wf_data.fp_mode;
         const size_t size = VIZ_BUFFER_SIZE * (!fp_mode ? sizeof(int16_t) : sizeof(float));
-        ret = clEnqueueWriteBuffer(context.command_queue[q_id[0]], context.input[q_id[0]], CL_FALSE, 0, size * sizeof(float), wf_data.container.data(), 0, NULL, NULL);
+        ret = clEnqueueWriteBuffer(context.command_queue[q_id[0]], context.input[q_id[0]], CL_FALSE, 0, size, wf_data.container.data(), 0, NULL, NULL);
         check_result("CL: Failed writing data to device.");
 
         const cl_int output_id = (cl_int)ssbo_buffer_ids->get_back_buffer();

@@ -7,7 +7,7 @@
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
-layout (std140, binding = 3) uniform ubo_block {
+layout (std140, binding = 4) uniform ubo_block {
 	int width;
 	int fp_mode;
 } ubo;

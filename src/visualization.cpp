@@ -19,7 +19,8 @@
 #define SSBO_BINDING_POINT_0 0
 #define SSBO_BINDING_POINT_1 1
 #define SSBO_BINDING_POINT_2 2
-#define UBO_BINDING_POINT 3
+#define SSBO_BINDING_POINT_3 3
+#define UBO_BINDING_POINT 4
 
 namespace {
     struct ubo_block {
@@ -103,9 +104,9 @@ bool visualizer::init_gl()
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, fft.SSBO[2]);
     glBufferData(GL_SHADER_STORAGE_BUFFER, VIZ_BUFFER_SIZE * sizeof(glm::vec2), zero_buf, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_0, fft.SSBO[0]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_1, fft.SSBO[1]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_2, fft.SSBO[2]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_1, fft.SSBO[0]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_2, fft.SSBO[1]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, SSBO_BINDING_POINT_3, fft.SSBO[2]);
 
     glBindVertexArray(0);
 

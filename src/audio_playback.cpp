@@ -229,6 +229,7 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
         waveform_data* waveform_data_back_buffer_ptr = waveform_buffer->get_back_buffer();
         waveform_data& wf_data = producer->begin_producing();
         memcpy(wf_data.container.data(), waveform_data_back_buffer_ptr->container.data(), bytes_to_copy);
+        wf_data.fp_mode = fp_mode;
         producer->end_producing();
         // we publish the waveform data to the graphics thread only after it's been copied to the fft compute buffer
         waveform_buffer->publish();
@@ -240,11 +241,13 @@ int audio_renderer::fill_output_buffer(const void* input_buffer, void* output_bu
         auto* waveform_buffer = renderer->get_waveform_data_buffer();
         waveform_data* waveform_data_back_buffer_ptr = waveform_buffer->get_back_buffer();
         memset(waveform_data_back_buffer_ptr->container.data(), 0, bytes_to_copy);
+        waveform_data_back_buffer_ptr->fp_mode = fp_mode;
         waveform_buffer->publish();
         // zero out fft data
         auto* producer = renderer->get_waveform_producer();
         waveform_data& wf_data = producer->begin_producing();
         memset(wf_data.container.data(), 0, bytes_to_copy);
+        wf_data.fp_mode = fp_mode;
         producer->end_producing();
     }
     PROFILE_STOP("audio_renderer::fill_output_buffer");
