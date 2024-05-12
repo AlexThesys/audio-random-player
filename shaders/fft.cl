@@ -15,7 +15,7 @@ float s16_to_float(short val)
 __kernel void compute_fft(__global int* input, __global float2* output, int num_bands, int fp_mode) {
 	const int t_id = get_global_id(0);
 	const float wf_input = (!fp_mode) ? s16_to_float(((__global short*)input)[t_id]) : as_float(input[t_id]);
-	
+	// [WIP] for now we just copy the input to the output
 	const float2 fft_output = {wf_input, 1.0f};
 	output[t_id] = fft_output;
 }

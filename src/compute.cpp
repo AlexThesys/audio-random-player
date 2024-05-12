@@ -4,6 +4,8 @@
 
 #include <CL/cl_gl.h>
 
+#include "profiling.h"
+
 #define check_result(msg)							\
 {													\
 	if (ret != CL_SUCCESS) {						\
@@ -234,6 +236,9 @@ void compute_fft::run()
         if (!state_compute.load()) {
             break;
         }
+
+        PROFILE_START("compute_fft::run");
+
         const cl_int fp_mode = (cl_int)wf_data.fp_mode;
         const size_t size = VIZ_BUFFER_SIZE * (!fp_mode ? sizeof(int16_t) : sizeof(float));
         ret = clEnqueueWriteBuffer(context.command_queue[q_id[0]], context.input[q_id[0]], CL_FALSE, 0, size, wf_data.container.data(), 0, NULL, NULL);
@@ -261,6 +266,8 @@ void compute_fft::run()
         check_result("CL: Failed releasing GL objects.");
 
         queue_selector ^= 0x01;
+
+        PROFILE_STOP("compute_fft::run");
     }
 exit:
     return;
@@ -281,6 +288,8 @@ cl_int compute_fft::run_compute(semaphore& gl_sem) {
 
 void compute_fft::compute_mt(void* args)
 {
+    PROFILE_SET_THREAD_NAME("CL/Compute FFT");
+
 	compute_fft* self = (compute_fft*)args;
     self->run();
     self->context.deinit();

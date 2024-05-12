@@ -127,8 +127,6 @@ error:
 
 void visualizer::run_gl()
 {
-    PROFILE_SET_THREAD_NAME("Graphics/Render");
-
     const std::chrono::microseconds frame_time(TARGET_FPS_mcs);
     auto prev_tm = std::chrono::high_resolution_clock::now();
     while(!window.get_should_close() && state_render.load())
@@ -221,6 +219,8 @@ void visualizer::init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_l
 
 void visualizer::render(void* args) 
 {
+    PROFILE_SET_THREAD_NAME("Graphics/Render");
+
     visualizer *self = (visualizer*)args;
 
     if (self->init_gl()) {
