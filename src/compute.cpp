@@ -270,10 +270,13 @@ void compute_fft::run()
         PROFILE_STOP("compute_fft::run");
     }
 exit:
+    gl_sem->signal();
+
     return;
 }
 
 cl_int compute_fft::run_compute(semaphore& gl_sem) {
+    this->gl_sem = &gl_sem;
     gl_sem.wait(); // wait until the context is initialized
 
     if (gl_context.ssbo[0] == 0 || gl_context.ssbo[1] == 0 || gl_context.ssbo[2] == 0 || gl_context.hGLRC == NULL || gl_context.hDC == NULL) {

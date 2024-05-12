@@ -195,6 +195,10 @@ void visualizer::run_gl()
         PROFILE_FRAME("Render");
         PROFILE_STOP("visualizer::run_gl");
     }
+    if (compute_cl) {
+        compute_cl->state_compute.store(0);
+        fft.sem_cl.signal();
+    }
 }
 
 void visualizer::deinit_gl()
@@ -203,9 +207,12 @@ void visualizer::deinit_gl()
     glDeleteBuffers(1, &waveform.SSBO);
     waveform.shader.delete_shader();
     glDeleteVertexArrays(1, &fft.VAO);
-    glDeleteBuffers(3, fft.SSBO);
     waveform.shader.delete_shader();
     window.deinitialize();
+    if (compute_cl) {
+        fft.sem_cl.wait();
+    }
+    glDeleteBuffers(3, fft.SSBO);
 }
 
 void visualizer::init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level, compute_fft* fft_comp)

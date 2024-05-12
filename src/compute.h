@@ -39,8 +39,12 @@ class compute_fft {
     } gl_context;
 
     std::thread compute_thread;
+    semaphore* gl_sem;
+
+public:
     std::atomic<int> state_compute{1};
 
+private:
     const char* filename;
 
     cl_int queue_selector; // alternate between "frames"
