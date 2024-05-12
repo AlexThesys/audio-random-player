@@ -46,16 +46,17 @@ class compute_fft {
     cl_int queue_selector; // alternate between "frames"
 
     static void compute_mt(void* args);
-
+    void run();
 public:
-    compute_fft() : ssbo_buffer_ids(nullptr), filename(nullptr), queue_selector(0) 
+    compute_fft(producer_consumer<waveform_data>* wf_consumer) : ssbo_buffer_ids(nullptr), filename(nullptr), queue_selector(0)
     { 
+        waveform_consumer = wf_consumer;
         memset(gl_context.ssbo, 0, sizeof(gl_context.ssbo)); 
         gl_context.hGLRC = NULL;
         gl_context.hDC = NULL;
     }
 
-    cl_int init(visualizer::fft_t &fft, producer_consumer<waveform_data> *wf_consumer);
+    cl_int init(visualizer::fft_t &fft);
     void deinit();
-    void run();
+    cl_int run_compute(semaphore &gl_sem);
 };

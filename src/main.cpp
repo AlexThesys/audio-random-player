@@ -31,11 +31,10 @@ int main(int argc, char **argv)
     }
     // graphics is initialized afer audio engine
     visualizer graphics_engine;
-    graphics_engine.init(audio_engine->get_waveform_data_buffer(), u_params.waveform_smoothing_level);
+    compute_fft fft_cl{ audio_engine->get_waveform_producer() };
+    graphics_engine.init(audio_engine->get_waveform_data_buffer(), u_params.waveform_smoothing_level, &fft_cl);
 
-    // cl is initialized after both audio and video engines
-    compute_fft fft_cl;
-    if (0 != fft_cl.init(graphics_engine.get_fft_data(), audio_engine->get_waveform_producer())) {
+    if (0 != fft_cl.run_compute(graphics_engine.get_cl_sem())) {
         ret = -1;
         goto exit;
     }

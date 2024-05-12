@@ -198,32 +198,24 @@ cl_int compute_fft::compute_context::deinit()
 	return ret;
 }
 
-cl_int compute_fft::init(visualizer::fft_t& fft, producer_consumer<waveform_data>* wf_consumer)
+cl_int compute_fft::init(visualizer::fft_t& fft)
 {
 	filename = "shaders/fft.cl";
     ssbo_buffer_ids = &fft.ssbo_buffer_ids;
 
-    waveform_consumer = wf_consumer;
-
-    fft.sem_cl.wait(); // wait until ssbo is created
     gl_context.ssbo[0] = fft.SSBO[0];
     gl_context.ssbo[1] = fft.SSBO[1];
     gl_context.ssbo[2] = fft.SSBO[2];
     gl_context.hGLRC = fft.hGLRC;
     gl_context.hDC = fft.hDC;
-    if (gl_context.ssbo[0] == 0 || gl_context.ssbo[1] == 0 || gl_context.ssbo[2] == 0 || gl_context.hGLRC == NULL || gl_context.hDC == NULL) {
-        puts("GL intialization failed. Exiting...");
-        return 0;
-    }
 
-	compute_thread = std::thread(compute_mt, this);
-
-    return -1;
+    return context.init(filename, this) == CL_SUCCESS;
 }
 
 void compute_fft::deinit()
 {
 	state_compute.store(0);
+    waveform_consumer->deinit(); // wake up the compute thread
 	if (compute_thread.joinable()) {
 		compute_thread.join();
 	}
@@ -239,6 +231,9 @@ void compute_fft::run()
     while (state_compute.load()) {
         const size_t q_id[2] = { (queue_selector + 0) & 0x01, (queue_selector + 1) & 0x01 };
         waveform_data& wf_data = waveform_consumer->begin_consuming();
+        if (!state_compute.load()) {
+            break;
+        }
         const cl_int fp_mode = (cl_int)wf_data.fp_mode;
         const size_t size = VIZ_BUFFER_SIZE * (!fp_mode ? sizeof(int16_t) : sizeof(float));
         ret = clEnqueueWriteBuffer(context.command_queue[q_id[0]], context.input[q_id[0]], CL_FALSE, 0, size * sizeof(float), wf_data.container.data(), 0, NULL, NULL);
@@ -253,8 +248,8 @@ void compute_fft::run()
         const cl_int num_fft_bands = FRAMES_PER_BUFFER; // fixed for now
         ret |= clSetKernelArg(context.kernel[0], 0, sizeof(cl_mem), (void*)&context.input[q_id[0]]);
         ret |= clSetKernelArg(context.kernel[0], 1, sizeof(cl_mem), (void*)&context.output[output_id]);
-        ret |= clSetKernelArg(context.kernel[0], 3, sizeof(cl_int), (void*)&num_fft_bands);
-        ret |= clSetKernelArg(context.kernel[0], 4, sizeof(cl_int), (void*)&fp_mode);
+        ret |= clSetKernelArg(context.kernel[0], 2, sizeof(cl_int), (void*)&num_fft_bands);
+        ret |= clSetKernelArg(context.kernel[0], 3, sizeof(cl_int), (void*)&fp_mode);
         check_result("CL: Failed setting kernel args.");
 
         ret = clEnqueueNDRangeKernel(context.command_queue[q_id[1]], context.kernel[0], 1, NULL, &global_item_size, &local_item_size, 0, NULL, NULL);
@@ -271,12 +266,22 @@ exit:
     return;
 }
 
+cl_int compute_fft::run_compute(semaphore& gl_sem) {
+    gl_sem.wait(); // wait until the context is initialized
+
+    if (gl_context.ssbo[0] == 0 || gl_context.ssbo[1] == 0 || gl_context.ssbo[2] == 0 || gl_context.hGLRC == NULL || gl_context.hDC == NULL) {
+        puts("GL intialization failed. Exiting...");
+        return -1;
+    }
+
+    compute_thread = std::thread(compute_mt, this);
+
+    return 0;
+}
+
 void compute_fft::compute_mt(void* args)
 {
 	compute_fft* self = (compute_fft*)args;
-
-	if (self->context.init(self->filename, self) == CL_SUCCESS) {
-		self->run();
-		self->context.deinit();
-	}
+    self->run();
+    self->context.deinit();
 }

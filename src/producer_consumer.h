@@ -32,6 +32,10 @@ class producer_consumer {
 
         ~producer_consumer () 
         {
+            deinit();
+        }
+        void deinit()
+        {
             //atomic_store((volatile uint32_t&)_stop_consumption, 1u);
             atomic_store((volatile uint32_t&)_new_data_ready, 1u);
             _sem.signal();

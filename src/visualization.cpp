@@ -12,6 +12,7 @@
 #include "AudioFile.h"
 #include "visualization.h"
 #include "constants.h"
+#include "compute.h"
 #include "profiling.h"
 
 // binding points - same as in the shaders
@@ -29,6 +30,8 @@ namespace {
 
 visualizer::visualizer()
 {
+    compute_cl = nullptr;
+
     waveform.VAO = 0;
     waveform.SSBO = 0;
     waveform.waveform_smoothing_level = VIZ_BUFFER_SMOOTHING_LEVEL_DEF;
@@ -113,8 +116,6 @@ bool visualizer::init_gl()
     fft.hDC = GetDC(hwnd);
 
     glFinish();
-
-    fft.sem_cl.signal(); // signal cl thread that ssbo is ready
 
     return true;
 
@@ -208,22 +209,25 @@ void visualizer::deinit_gl()
     window.deinitialize();
 }
 
-void visualizer::init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level)
+void visualizer::init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level, compute_fft* fft_comp)
 {
     waveform.waveform_buffer = wf_buf;
     waveform.waveform_smoothing_level = smoothing_level;
+    compute_cl = fft_comp;
 
     render_thread = std::thread(render, this);
 }
 
 void visualizer::render(void* args) 
 {
-    visualizer *viz = (visualizer*)args;
+    visualizer *self = (visualizer*)args;
 
-    if (viz->init_gl()) {
-        viz->run_gl();
-        viz->deinit_gl();
+    if (self->init_gl()) {
+        self->compute_cl->init(self->fft);
+        self->fft.sem_cl.signal(); // signal cl thread that ssbo is ready
+        self->run_gl();
+        self->deinit_gl();
     } else {
-        viz->waveform.shader.delete_shader();
+        self->waveform.shader.delete_shader();
     }
 }

@@ -11,6 +11,8 @@
 #include "AudioFile.h"
 #include "utils.h"
 
+class compute_fft; // FWD
+
 class visualizer
 {
 public:
@@ -35,6 +37,8 @@ public:
     GLuint UBO; // shared between the shader programs
 
 private:
+    compute_fft* compute_cl;
+
     waveform_t waveform;
     fft_t fft;
 
@@ -47,7 +51,7 @@ private:
 public:
     visualizer();
 
-    void init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level);
+    void init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level, compute_fft* fft_comp);
     void deinit() 
     { 
         state_render.store(0); 
@@ -56,9 +60,9 @@ public:
         }
     }
 
-    static void render(void *args);
+    semaphore& get_cl_sem() { return fft.sem_cl; }
 
-    fft_t& get_fft_data() { return fft; }
+    static void render(void *args);
 
 private:
     bool init_gl();
