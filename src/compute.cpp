@@ -156,8 +156,8 @@ cl_int compute_fft::compute_context::init(const char* filename, const compute_ff
     // zeroize input buffers
     int8_t zero_buf[VIZ_BUFFER_SIZE * sizeof(float)];
     memset(zero_buf, 0, sizeof(zero_buf));
-    ret = clEnqueueWriteBuffer(command_queue[0], input[0], CL_TRUE, 0, sizeof(zero_buf), zero_buf, 0, NULL, NULL);
-    ret |= clEnqueueWriteBuffer(command_queue[0], input[1], CL_TRUE, 0, sizeof(zero_buf), zero_buf, 0, NULL, NULL);
+    ret = clEnqueueWriteBuffer(command_queue[0], input[0], CL_FALSE, 0, sizeof(zero_buf), zero_buf, 0, NULL, NULL);
+    ret |= clEnqueueWriteBuffer(command_queue[1], input[1], CL_FALSE, 0, sizeof(zero_buf), zero_buf, 0, NULL, NULL);
     check_result("Error: CL failed intializing input buffers!");
 
     // link output buffers
