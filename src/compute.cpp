@@ -255,8 +255,7 @@ void compute_fft::run()
         const cl_int num_fft_bands = FRAMES_PER_BUFFER; // fixed for now
         ret |= clSetKernelArg(context.kernel[0], 0, sizeof(cl_mem), (void*)&context.input[q_id[0]]);
         ret |= clSetKernelArg(context.kernel[0], 1, sizeof(cl_mem), (void*)&context.output[output_id]);
-        ret |= clSetKernelArg(context.kernel[0], 2, sizeof(cl_int), (void*)&num_fft_bands);
-        ret |= clSetKernelArg(context.kernel[0], 3, sizeof(cl_int), (void*)&fp_mode);
+        ret |= clSetKernelArg(context.kernel[0], 2, sizeof(cl_int), (void*)&fp_mode);
         check_result("CL: Failed setting kernel args.");
 
         ret = clEnqueueNDRangeKernel(context.command_queue[q_id[1]], context.kernel[0], 1, NULL, &global_item_size, &local_item_size, 0, NULL, NULL);

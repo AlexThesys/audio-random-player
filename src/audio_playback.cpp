@@ -398,9 +398,10 @@ void audio_streamer::load_file()
     PROFILE_START("audio_streamer::load_file");
     AudioFile<float>& audio_file = audio_files[buffer_idx];
     const size_t file_id = get_rnd_file_id();
-    const bool res = audio_file.load(file_names[file_id]); res;
+    bool res = audio_file.load(file_names[file_id]); res;
     assert(res);
-    file_queue.try_push(&audio_file);
+    res = file_queue.try_push(&audio_file);
+    assert(res);
     buffer_idx = ++buffer_idx & (audio_files.size() - 1);
     PROFILE_STOP("audio_streamer::load_file");
 
