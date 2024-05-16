@@ -54,7 +54,7 @@ void main()
 	
 	
 	const float y_scale = WF_SCALE;
-	const float y_pos = amp * y_scale * (-float(is_right_channel)); // flip right channel's direction
+	const float y_pos = amp * y_scale * (1.0f - 2.0f * float(is_right_channel)); // flip right channel's direction
 	
 	vs_out.colour = vec3(phase, (1.0f - phase), 0.0f); // TODO: come up with something better
 	
