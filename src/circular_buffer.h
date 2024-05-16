@@ -28,13 +28,6 @@ public:
         return (size.load() == capacity);
     }
 
-    void read_tail(T& item)
-    {
-        guard.lock();
-        item = queue[read_idx];
-        guard.unlock();
-    }
-
     bool try_read(T& item) 
     {
         guard.lock();

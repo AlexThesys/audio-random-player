@@ -361,9 +361,7 @@ void audio_streamer::deinit()
 AudioFile<float>* audio_streamer::request()
 {
     AudioFile<float>* file = nullptr;
-    // we first advance the read index and only then start reading, so that the data wouldn't been overriden during the process
-    file_queue.advance();
-    file_queue.read_tail(file);
+    file_queue.try_pop(file);
     sem.signal(); // signal to load the next file
     return file;
 }
