@@ -16,6 +16,8 @@
 
 #define MAX_SOURCE_SIZE 0x100000
 
+#define WORK_GROUP_SIZE 0x40
+
 cl_int compute_fft::compute_context::init(const char* filename, const compute_fft* owner)
 {
     FILE* fp = fopen(filename, "r");
@@ -227,7 +229,7 @@ void compute_fft::run()
 {
     cl_int ret = CL_SUCCESS;
 
-    const size_t local_item_size = 64;
+    const size_t local_item_size = WORK_GROUP_SIZE;
     const size_t global_item_size = VIZ_BUFFER_SIZE; // we are computing FFTs for both channels independentely
 
     while (state_compute.load()) {
