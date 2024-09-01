@@ -36,6 +36,14 @@ public:
 		}
 		return front_buffer_ptr;
 	}
+	T* const try_consume()
+	{
+		if (InterlockedExchange(&has_new_data, 0)) {
+			front_buffer_ptr = (T*)InterlockedExchange64((volatile LONG64*)&middle_buffer_ptr, reinterpret_cast<LONG64>(front_buffer_ptr));
+			return front_buffer_ptr;
+		}
+		return nullptr;
+	}
 };
 
 class tripple_indices {
