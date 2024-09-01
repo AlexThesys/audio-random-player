@@ -27,11 +27,11 @@ public:
 	void publish() 
 	{
 		back_buffer_ptr = (T*)InterlockedExchange64((volatile LONG64*)&middle_buffer_ptr, reinterpret_cast<LONG64>(back_buffer_ptr));
-		has_new_data = 1;
+		InterlockedExchange(&has_new_data, 1); // InterlockedExchange is used for serialization
 	}
 	T* const consume()
 	{
-		if (InterlockedCompareExchange(&has_new_data, 0, 1)) {
+		if (InterlockedExchange(&has_new_data, 0)) {
 			front_buffer_ptr = (T*)InterlockedExchange64((volatile LONG64*)&middle_buffer_ptr, reinterpret_cast<LONG64>(front_buffer_ptr));
 		}
 		return front_buffer_ptr;
@@ -53,11 +53,11 @@ public:
 	void publish()
 	{
 		data[0] = (uint64_t)InterlockedExchange64((volatile LONG64*)(&data[1]), static_cast<LONG64>(data[0]));
-		has_new_data = 1;
+		InterlockedExchange(&has_new_data, 1); // InterlockedExchange is used for serialization
 	}
 	uint64_t const consume()
 	{
-		if (InterlockedCompareExchange(&has_new_data, 0, 1)) {
+		if (InterlockedExchange(&has_new_data, 0)) {
 			data[2] = (uint64_t)InterlockedExchange64((volatile LONG64*)(&data[1]), static_cast<LONG64>(data[2]));
 		}
 		return data[2];
