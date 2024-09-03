@@ -6,7 +6,7 @@
 #include <GL/glew.h>
 #include "Window.h"
 #include "Shader.h"
-#include "tripple_buffer.h"
+#include "triple_buffer.h"
 #include "semaphore.h"
 #include "AudioFile.h"
 #include "utils.h"
@@ -17,7 +17,7 @@ class visualizer
 {
 public:
     struct waveform_t {
-        tripple_buffer<waveform_data>* waveform_buffer = nullptr;
+        triple_buffer<waveform_data>* waveform_buffer = nullptr;
         r_shader shader;
         GLuint VAO;
         GLuint SSBO;
@@ -51,7 +51,7 @@ private:
 public:
     visualizer();
 
-    void init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level, compute_fft* fft_comp);
+    void init(triple_buffer<waveform_data>* wf_buf, int32_t smoothing_level, compute_fft* fft_comp);
     void deinit() 
     { 
         state_render.store(0); 

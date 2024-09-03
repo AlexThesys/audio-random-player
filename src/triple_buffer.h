@@ -7,7 +7,7 @@
 #include "constants.h"
 
 template <typename T>
-class tripple_buffer {
+class triple_buffer {
 	std::array<T, 3> data;
 	struct {
 		T *front_buffer_ptr;
@@ -16,7 +16,7 @@ class tripple_buffer {
 	};
 	volatile LONG has_new_data;
 public:
-	tripple_buffer() : has_new_data(1)
+	triple_buffer() : has_new_data(1)
 	{
 		front_buffer_ptr = &data[2];
 		back_buffer_ptr = &data[0];

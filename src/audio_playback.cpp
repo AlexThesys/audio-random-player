@@ -152,8 +152,8 @@ bool audio_renderer::init(const char* folder_path, size_t* max_lenght_samples)
 {
     data = new pa_data();
     streamer = new audio_streamer();
-    params_buffer = new tripple_buffer<play_params>();
-    waveform_buffer = new tripple_buffer<waveform_data>();
+    params_buffer = new triple_buffer<play_params>();
+    waveform_buffer = new triple_buffer<waveform_data>();
     waveform_producer = new producer_consumer<waveform_data>();
     if (!streamer->init(folder_path, max_lenght_samples)) {
         delete streamer;

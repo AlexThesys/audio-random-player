@@ -135,7 +135,7 @@ void user_params::process_cmdline_args(int argc, char **argv)
 }
 
 // main thread loop
-void user_params::run_user_loop(pa_data &data, tripple_buffer<play_params> *p_params)
+void user_params::run_user_loop(pa_data &data, triple_buffer<play_params> *p_params)
 {
     do {
         puts("\nEnter \'q\' to stop the playback or \'p\' to change parameters...");

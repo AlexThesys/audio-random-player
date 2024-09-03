@@ -8,7 +8,7 @@
 #include "cache.h"
 #include "circular_buffer.h"
 #include "semaphore.h"
-#include "tripple_buffer.h"
+#include "triple_buffer.h"
 #include "producer_consumer.h"
 
 struct play_data
@@ -121,9 +121,9 @@ class audio_renderer
 {
     pa_data* data = nullptr;
     audio_streamer* streamer = nullptr;
-    tripple_buffer<play_params> *params_buffer = nullptr;
+    triple_buffer<play_params> *params_buffer = nullptr;
     // ouput to graphics engine
-    tripple_buffer<waveform_data> *waveform_buffer = nullptr;
+    triple_buffer<waveform_data> *waveform_buffer = nullptr;
     // output to fft computer
     producer_consumer<waveform_data> *waveform_producer = nullptr; // producer for waveform_consumer
 
@@ -137,8 +137,8 @@ public:
     void start_rendering();
     void deinit();
     pa_data* get_data() { return data; }
-    tripple_buffer<play_params> *get_params_buffer() { return params_buffer; }
-    tripple_buffer<waveform_data> *get_waveform_data_buffer() { return waveform_buffer; }
+    triple_buffer<play_params> *get_params_buffer() { return params_buffer; }
+    triple_buffer<waveform_data> *get_waveform_data_buffer() { return waveform_buffer; }
     producer_consumer<waveform_data> *get_waveform_producer() { return waveform_producer; }
 
     static int fill_output_buffer(const void* input_buffer, void* output_buffer, unsigned long frames_per_buffer,

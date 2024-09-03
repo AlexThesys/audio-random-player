@@ -215,7 +215,7 @@ void visualizer::deinit_gl()
     glDeleteBuffers(3, fft.SSBO);
 }
 
-void visualizer::init(tripple_buffer<waveform_data>* wf_buf, int32_t smoothing_level, compute_fft* fft_comp)
+void visualizer::init(triple_buffer<waveform_data>* wf_buf, int32_t smoothing_level, compute_fft* fft_comp)
 {
     waveform.waveform_buffer = wf_buf;
     waveform.waveform_smoothing_level = smoothing_level;
