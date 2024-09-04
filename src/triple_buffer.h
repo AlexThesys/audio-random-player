@@ -46,12 +46,12 @@ public:
 	}
 };
 
-class tripple_indices {
+class triple_indices {
 	std::array<volatile uint64_t, 3> data;
 	volatile LONG has_new_data;
 
 public:
-	tripple_indices() : has_new_data(1)
+	triple_indices() : has_new_data(1)
 	{
 		data[0] = 0; // back buffer
 		data[1] = 1; // shared buffer

@@ -31,7 +31,7 @@ class compute_fft {
     producer_consumer<waveform_data>* waveform_consumer = nullptr; // consumer of waveform_producer
 
     // output fft to graphics engine
-    tripple_indices* ssbo_buffer_ids;  // indices into SSBO array
+    triple_indices* ssbo_buffer_ids;  // indices into SSBO array
     struct {
         HGLRC hGLRC;
         HDC hDC;

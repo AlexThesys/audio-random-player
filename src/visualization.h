@@ -25,7 +25,7 @@ public:
     };
 
     struct fft_t {
-        tripple_indices ssbo_buffer_ids; // indices into SSBO array
+        triple_indices ssbo_buffer_ids; // indices into SSBO array
         r_shader shader;
         GLuint VAO;
         GLuint SSBO[3]; // tripple-buffered SSBOs
