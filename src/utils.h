@@ -34,3 +34,19 @@ int clamp_input(T val, T min, T max)
 inline bool fp_similar(float x, float y, float eps = 0.0001f) {
     return (fabs(x) - fabs(y)) < eps;
 }
+
+inline float calculate_volume_lower_bound(float volume_deviation)
+{
+    return powf(10, -0.05f * volume_deviation);
+}
+
+inline uint32_t find_next_pow2(uint32_t v) {
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return	v;
+}

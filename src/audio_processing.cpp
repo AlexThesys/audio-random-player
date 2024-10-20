@@ -89,3 +89,20 @@ void apply_volume(buffer_container &buffer, size_t num_channels, float volume, b
         }
     }
 }
+
+int calculate_note_frames(int bpm, int note_length_divisor, const size_t max_lenght_samples, bool no_fadeout)
+{
+    int note_frames;
+    if (no_fadeout) { // always play full length of all the files - don't fade out them
+        note_frames = (int)max_lenght_samples;
+    }
+    else {
+        constexpr float min2sec = 1.0f / 60.0f;
+        const float bps = (float)bpm * min2sec;
+        const float spb = 1.0f / bps;
+        const float beat_lenght = 4.0f; // because bpm acually means 1/4th per second
+        const float note_len_sec = spb * (beat_lenght / (float)note_length_divisor);
+        note_frames = static_cast<int>(ceilf(static_cast<float>(SAMPLE_RATE) * note_len_sec));
+    }
+    return note_frames;
+}

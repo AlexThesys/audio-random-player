@@ -7,27 +7,7 @@
 #include "utils.h"
 #include "profiling.h"
 
-extern volatile play_params *params_middle_buffer;
-extern volatile LONG new_data;
-
-static int calculate_step_time(int walk_speed, const size_t max_lenght_samples, bool no_fadeout)
-{
-    const float step_size = 0.762f; // for an average man
-    const float kph_2_mps_rec = 1.0f / 3.6f;
-    const float w_speed = static_cast<float>(walk_speed) * kph_2_mps_rec;
-    int step_num_frames;
-    if (no_fadeout) { // always play full length of all the files - don't fade out them
-        step_num_frames = (int)max_lenght_samples;
-    } else {
-        step_num_frames = static_cast<int>(ceilf(static_cast<float>(SAMPLE_RATE) * step_size / w_speed));
-    }
-    return step_num_frames;
-}
-
-static inline float calculate_volume_lower_bound(float volume_deviation)
-{
-    return powf(10, -0.05f * volume_deviation);
-}
+extern int calculate_note_frames(int bpm, int note_length_divisor, const size_t max_lenght_samples, bool no_fadeout);
 
 static int get_input(int default_value)
 {
@@ -57,9 +37,13 @@ void user_params::get_user_params(play_params *data)
     puts("Please provide the playback parameters in decimal integer format!");
     puts("Enter any letter to skip the current parameter and use default.");
     int value;
-    printf("\nEnter the walk speed in kph [1...12]:\t");
-    value = clamp_input(get_input(DEFAULT_WALK_SPEED), MIN_WALK_SPEED, MAX_WALK_SPEED);
-    const int step_num_frames = calculate_step_time(value, max_lenght_samples, disable_fadeout);
+    printf("\nEnter the BPM (tempo) [60...240]:\t");
+    value = clamp_input(get_input(DEFAULT_BPM), MIN_BPM, MAX_BPM);
+    const int bpm = value;
+    printf("\nEnter the divisor of the note length (pow2) [1...32]:\t");
+    value = clamp_input(get_input(DEFAULT_NOTE_DIVISOR), MIN_NOTE_DIVISOR, MAX_NOTE_DIVISOR);
+    value = find_next_pow2(value);
+    const int step_num_frames = calculate_note_frames(bpm, value, max_lenght_samples, disable_fadeout);
     printf("%d\n", value);
     printf("\nEnter the pitch deviation in semitones [0...12]:\t");
     value = clamp_input(get_input(DEFAULT_PITCH_DEVIATION), MIN_PITCH_DEVIATION, MAX_PITCH_DEVIATION);
@@ -94,7 +78,8 @@ void user_params::get_user_params(play_params *data)
         lfo_amount = static_cast<float>(value) / static_cast<float>(MAX_LFO_AMOUNT);
     }
 
-    while ((getchar()) != '\n'); // flush stdin
+    fflush(stdin);
+   // while ((getchar()) != '\n'); // flush stdin
 
     printf("\nEnable distortion? [y/n]\t");
     char ch = static_cast<char>(getchar());
