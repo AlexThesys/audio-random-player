@@ -40,7 +40,7 @@ void user_params::get_user_params(play_params *data)
     printf("\nEnter the BPM (tempo) [60...240]:\t");
     value = clamp_input(get_input(DEFAULT_BPM), MIN_BPM, MAX_BPM);
     const int bpm = value;
-    printf("\nEnter the divisor of the note length (pow2) [1...32]:\t");
+    printf("\nEnter the divisor of the note length (pow2) [1...16]:\t");
     value = clamp_input(get_input(DEFAULT_NOTE_DIVISOR), MIN_NOTE_DIVISOR, MAX_NOTE_DIVISOR);
     value = find_next_pow2(value);
     const int step_num_frames = calculate_note_frames(bpm, value, max_lenght_samples, disable_fadeout);
@@ -61,7 +61,6 @@ void user_params::get_user_params(play_params *data)
     value = clamp_input(get_input(DEFAULT_LPF_Q_DEVIATION), MIN_LPF_Q_DEVIATION, MAX_LPF_Q_DEVIATION);
     printf("%d\n", value);
     const float lpf_q = static_cast<float>(value);
-
     puts("\nEnter non-zero value to use LFO for volume modulation.");
     printf("Enter LFO modulation frequency in Hz [1...10]:\t");
     value = get_input(DEFAULT_LFO_FREQ);
@@ -78,8 +77,7 @@ void user_params::get_user_params(play_params *data)
         lfo_amount = static_cast<float>(value) / static_cast<float>(MAX_LFO_AMOUNT);
     }
 
-    fflush(stdin);
-   // while ((getchar()) != '\n'); // flush stdin
+    while ((getchar()) != '\n'); // flush stdin
 
     printf("\nEnable distortion? [y/n]\t");
     char ch = static_cast<char>(getchar());
