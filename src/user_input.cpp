@@ -40,11 +40,22 @@ void user_params::get_user_params(play_params *data)
     printf("\nEnter the BPM (tempo) [60...240]:\t");
     value = clamp_input(get_input(DEFAULT_BPM), MIN_BPM, MAX_BPM);
     const int bpm = value;
-    printf("\nEnter the divisor of the note length (pow2) [1...16]:\t");
-    value = clamp_input(get_input(DEFAULT_NOTE_DIVISOR), MIN_NOTE_DIVISOR, MAX_NOTE_DIVISOR);
-    value = find_next_pow2(value);
-    const int step_num_frames = calculate_note_frames(bpm, value, max_lenght_samples, disable_fadeout);
-    printf("%d\n", value);
+
+    while ((getchar()) != '\n'); // flush stdin
+
+    printf("\nRandomize notes' lengths? [y/n]\t");
+    char ch = static_cast<char>(getchar());
+    const bool rnd_note_length = (ch == 'y' || ch == 'Y');
+    printf("%c\n", rnd_note_length ? 'y' : 'n');
+
+    int note_num_frames = 0;
+    if (!rnd_note_length) {
+        printf("\nEnter the divisor of the note length (pow2) [1...16]:\t");
+        value = clamp_input(get_input(DEFAULT_NOTE_DIVISOR), MIN_NOTE_DIVISOR, MAX_NOTE_DIVISOR);
+        value = find_next_pow2(value);
+        note_num_frames = calculate_note_frames(bpm, value, max_lenght_samples, disable_fadeout);
+        printf("%d\n", value);
+    }
     printf("\nEnter the pitch deviation in semitones [0...12]:\t");
     value = clamp_input(get_input(DEFAULT_PITCH_DEVIATION), MIN_PITCH_DEVIATION, MAX_PITCH_DEVIATION);
     printf("%d\n", value);
@@ -80,7 +91,7 @@ void user_params::get_user_params(play_params *data)
     while ((getchar()) != '\n'); // flush stdin
 
     printf("\nEnable distortion? [y/n]\t");
-    char ch = static_cast<char>(getchar());
+    ch = static_cast<char>(getchar());
     const bool enable_dist = (ch == 'y' || ch == 'Y');
     printf("%c\n", enable_dist ? 'y' : 'n');
 
@@ -93,8 +104,8 @@ void user_params::get_user_params(play_params *data)
 
     while ((getchar()) != '\n'); // flush stdin
 
-    data->init(step_num_frames, pitch_deviation, volume_lower_bound, lpf_freq, lpf_q, lfo_freq, lfo_amount, use_lfo,
-               enable_dist, enable_fp_wf);
+    data->init(note_num_frames, (disable_fadeout ? max_lenght_samples : INVALID_MAX_FRAMES), pitch_deviation, volume_lower_bound, lpf_freq,
+        lpf_q, lfo_freq, lfo_amount, bpm, use_lfo, enable_dist, enable_fp_wf, rnd_note_length);
 }
 
 static const char* input_args[] = { "--no-fadeout", "-s=" };

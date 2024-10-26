@@ -47,5 +47,6 @@
 #define DEFAULT_LFO_AMOUNT 100
 #define MIN_LFO_AMOUNT 0
 #define MAX_LFO_AMOUNT 100
+#define INVALID_MAX_FRAMES -1
 
 constexpr size_t TARGET_FPS_mcs = 1000000 / 60;

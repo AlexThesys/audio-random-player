@@ -8,10 +8,13 @@
 
 #define PA_SAMPLE_TYPE paFloat32
 
+extern int calculate_note_frames(int bpm, int note_length_divisor, const size_t max_lenght_samples, bool no_fadeout);
+
 static librandom::randu random_gen;
 static dsp::filter lp_filter;
 static const dsp::modulation::wavetable w_table;
 static dsp::modulation::lfo lfo_gen{&w_table};
+static const int note_length_divisors[] = { 2, 4, 8, 16 };
 
 static inline float semitones_to_pitch_scale(float semitones_dev)
 {
@@ -27,9 +30,17 @@ void pa_data::randomize_data(play_params* params_front_buffer)
     const float lpf_freq = random_gen.fp(MAX_LPF_FREQ - params_front_buffer->lpf_freq_range, MAX_LPF_FREQ);
     const float lpf_q = random_gen.fp(DEFAULT_LPF_Q, DEFAULT_LPF_Q + params_front_buffer->lpf_q_range);
     lp_filter.setup(lpf_freq, lpf_q);
-    p_data.num_step_frames = params_front_buffer->num_step_frames;
-    if (params_front_buffer->use_lfo)
+    if (!params_front_buffer->randomize_notes_length) {
+        p_data.num_note_frames = params_front_buffer->num_note_frames;
+    } else {
+        const int bpm = params_front_buffer->bpm;
+        const int note_length_divisor = note_length_divisors[random_gen.i(_countof(note_length_divisors))];
+        const int max_note_frames = params_front_buffer->max_note_frames;
+        p_data.num_note_frames = calculate_note_frames(bpm, note_length_divisor, max_note_frames, (max_note_frames != INVALID_MAX_FRAMES));
+    }
+    if (params_front_buffer->use_lfo) {
         lfo_gen.set_rate(params_front_buffer->lfo_freq, params_front_buffer->lfo_amount);
+    }
     p_data.frame_index = 0;
 }
 
@@ -38,7 +49,7 @@ void pa_data::process_audio(float *out_buffer, size_t frames_per_buffer)
     assert((frames_per_buffer & 0x3) == 0x0);
     const int frame_index = p_data.frame_index;
     const AudioFile<float> &audio_file = *p_data.audio_file;
-    const int total_samples = _min(audio_file.getNumSamplesPerChannel(), (int)p_data.num_step_frames);
+    const int total_samples = _min(audio_file.getNumSamplesPerChannel(), (int)p_data.num_note_frames);
     const int audio_frames_left = total_samples - frame_index;
     const size_t num_file_channels = static_cast<size_t>(audio_file.getNumChannels());
     if (audio_frames_left > 0) {
@@ -76,7 +87,7 @@ void pa_data::process_audio(float *out_buffer, size_t frames_per_buffer)
         memset(out_buffer, 0, frames_per_buffer * sizeof(float) * NUM_CHANNELS);    /* left & right */
     }
     const int frame_counter = p_data.frame_counter + static_cast<int>(frames_per_buffer);
-    p_data.frame_counter = (frame_counter < p_data.num_step_frames) ? frame_counter : 0;
+    p_data.frame_counter = (frame_counter < p_data.num_note_frames) ? frame_counter : 0;
 }
 
 int pa_player::init_pa(audio_renderer* renderer)

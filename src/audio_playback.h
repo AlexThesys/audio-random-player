@@ -19,12 +19,12 @@ struct play_data
     int frame_counter;
     float pitch;
     float volume;
-    int num_step_frames;
+    int num_note_frames;
     // 4 bytes padding
 
     play_data()
         : audio_file(nullptr), frame_index(0), frame_counter(0), pitch(1.0f), volume(1.0f),
-          num_step_frames(0)
+          num_note_frames(0)
     {
     }
 
@@ -32,7 +32,7 @@ struct play_data
     {
         pitch = 1.0f;
         volume = 1.0f;
-        num_step_frames = 0;
+        num_note_frames = 0;
         frame_index = 0;
         frame_counter = 0;
     }
@@ -40,30 +40,35 @@ struct play_data
 
 struct play_params
 {
-    int num_step_frames;
+    int num_note_frames;
+    int max_note_frames;
     float pitch_deviation;
     float volume_lower_bound;
     float lpf_freq_range;
     float lpf_q_range;
     float lfo_freq;
     float lfo_amount;
+    float bpm;
     bool use_lfo;
     bool waveshaper_enabled;
     bool fp_visualization;
-    // padding 1 bytes
+    bool randomize_notes_length;
 
-    void init(int nsf, float pd, float vlb, float lfr, float lqr, float lf, float la, bool ul, bool we, bool fpv)
+    void init(int nsf, int mnf, float pd, float vlb, float lfr, float lqr, float lf, float la, float bpm, bool ul, bool we, bool fpv, bool rnl)
     {
-        num_step_frames = nsf;
+        num_note_frames = nsf;
+        max_note_frames = mnf;
         pitch_deviation = pd;
         volume_lower_bound = vlb;
         lpf_freq_range = lfr;
         lpf_q_range = lqr;
         lfo_freq = lf;
         lfo_amount = la;
+        this->bpm = bpm;
         use_lfo = ul;
         waveshaper_enabled = we;
         fp_visualization = fpv;
+        randomize_notes_length = rnl;
     }
 };
 
